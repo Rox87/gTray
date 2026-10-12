@@ -1,3 +1,12 @@
+"""
+GTray.py - Ponto de Entrada e Interface Gráfica Principal do gTray.
+
+Fornece a interface visual (PyQt5) do gTray com tema escuro moderno,
+gerenciamento de abas (Atalhos, Modelos, Provedores, Geral), gravação
+interativa de teclas, mensagens flash de status e controle de inicialização
+do serviço em segundo plano.
+"""
+
 from PyQt5.QtWidgets import (
     QDesktopWidget, QCheckBox, QLineEdit, QApplication, QWidget,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
@@ -28,6 +37,7 @@ config.read('assets/config.ini', encoding='utf-8')
 
 
 class GTray_CFG_UI(QWidget):
+    """Janela principal de configuração e controle do gTray em PyQt5."""
 
     def __init__(self):
         super().__init__()
@@ -278,7 +288,7 @@ class GTray_CFG_UI(QWidget):
         extract_box = QVBoxLayout()
         extract_box.setSpacing(4)
         extract_row = QHBoxLayout()
-        self.checkbox_extract_blocks = QCheckBox("Conteúdo de blocos apenas")
+        self.checkbox_extract_blocks = QCheckBox("Modo Programação")
         self.checkbox_extract_blocks.setChecked(False)
 
         lbl_comment = QLabel("Comentário:")

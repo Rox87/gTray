@@ -1,3 +1,11 @@
+"""
+pessoal/IA.py - Camada de Integração Unificada com Modelos de Linguagem (LLMs).
+
+Fornece uma interface agnóstica para envio de prompts e geração de respostas
+utilizando a biblioteca oficial OpenAI compatível com múltiplos provedores
+(OpenAI, DeepSeek, Groq, Ollama, OpenRouter, Together, Mistral, Gemini, etc.).
+"""
+
 import os
 import re
 from openai import OpenAI, AuthenticationError, PermissionDeniedError, NotFoundError, BadRequestError
@@ -5,7 +13,16 @@ from pessoal.Escriba import registrador
 from pessoal.config_manager import ConfigManager
 
 class IA:
-    def __init__(self, key, logger_from, base_url=None):
+    """Cliente unificado de Inteligência Artificial com suporte a chave dinâmica e endpoint base."""
+
+    def __init__(self, key: str, logger_from, base_url: str = None):
+        """
+        Inicializa a instância de IA.
+
+        :param key: Chave de API do provedor (Bearer Token).
+        :param logger_from: Instância de logger para registro de eventos.
+        :param base_url: URL base opcional para provedores compatíveis com a API OpenAI.
+        """
         global logger
         logger = logger_from
         self.config = ConfigManager()
@@ -14,12 +31,16 @@ class IA:
         self._init_client()
 
     def _init_client(self):
+        """Instancia o cliente OpenAI com a chave e a base_url configuradas."""
         kwargs = {"api_key": self.key if self.key else "dummy_key"}
         if self.base_url:
             kwargs["base_url"] = self.base_url
         self.client = OpenAI(**kwargs)
 
-    def change_key(self, key, base_url=None):
+    def change_key(self, key: str, base_url: str = None):
+        """
+        Atualiza dinamicamente a chave de API e/ou a URL base sem reiniciar a aplicação.
+        """
         changed = False
         if key is not None and key != self.key:
             self.key = key
@@ -30,7 +51,14 @@ class IA:
         if changed or not hasattr(self, 'client'):
             self._init_client()
 
-    def python_responder(self, prompt, mode='python', model_override=None, comment_char="#"):
+    def python_responder(self, prompt: str, mode: str = 'python', model_override: str = None, comment_char: str = "#") -> str:
+        """
+        Gera soluções em código Python com formatação estruturada de múltiplos arquivos.
+
+        Detecta arquivos referenciados no formato @@caminho/arquivo@@, anexa seus conteúdos
+        ao prompt, e formata a resposta comentando as linhas do prompt original e os cabeçalhos
+        de arquivos com o caractere de comentário configurado.
+        """
         def detectar_caminho_arquivo(texto):
             padrao = r'@@([^@]+[\\/][^@]+)@'
             return re.findall(padrao, texto)
@@ -90,7 +118,16 @@ class IA:
             logger.error(f"Error in AI response: {str(e)}")
             raise
 
-    def responder(self, prompt, cmd="", mode=None, model_override=None):
+    def responder(self, prompt: str, cmd: str = "", mode: str = None, model_override: str = None) -> str:
+        """
+        Envia uma requisição de chat completions para a IA com suporte a retentativas.
+
+        :param prompt: Mensagem do usuário capturada da seleção.
+        :param cmd: Pré-comando / Mensagem do Sistema (system prompt) configurada para o atalho.
+        :param mode: Nome do modo/atalho para fallback de modelo.
+        :param model_override: Nome do modelo específico configurado para o atalho.
+        :return: Resposta gerada pela IA.
+        """
         messages = []
         if cmd and str(cmd).strip():
             messages.append({"role": "system", "content": str(cmd).strip()})

@@ -1,6 +1,16 @@
+"""
+handler.py - Controlador Principal do Serviço de Segundo Plano e Ícone na Bandeja.
+
+Responsável por:
+1. Gerenciar o ciclo de vida do ícone do gTray na bandeja do Windows (pystray).
+2. Registrar e desregistrar atalhos de teclado globais dinamicamente (keyboard).
+3. Coordenar a captura de seleção, consulta ao modelo de IA e injeção da resposta.
+4. Extrair e formatar blocos de código markdown quando configurado no atalho.
+"""
+
 import pystray
 from PIL import Image
-import win32gui,win32con
+import win32gui, win32con
 import keyboard
 from pessoal.Decorador import tempo_decorrido
 from pessoal.IA import IA
@@ -10,22 +20,26 @@ from gtray_data_manager import GTrayDataManager
 import re
 import subprocess
 import configparser
-config = configparser.ConfigParser()
 
-# Read in the configuration file
-config.read('assets/config.ini',encoding='utf-8')
+config = configparser.ConfigParser()
+config.read('assets/config.ini', encoding='utf-8')
 
 def wait_hotkey_release():  
-    print("Hotkey pressed, waiting for release...")
-
-    # Wait for all keys to be released
+    """Aguarda a liberação de teclas modificadoras antes de executar a automação."""
     while keyboard.is_pressed('ctrl'):
         pass
 
-    print("Hotkey released!")  
 class Gtray:
+    """Controlador central de eventos de teclado, bandeja do sistema e comunicação com a IA."""
+
     @staticmethod
     def extract_code_blocks(response: str, comment_char: str = "#") -> str:
+        """
+        Extrai blocos de código cercados por ``` de uma resposta markdown da IA.
+        
+        Se houver o nome do arquivo na linha imediatamente anterior ao bloco,
+        adiciona o cabeçalho com o caractere de comentário configurado (ex: '# main.py').
+        """
         if not response:
             return ""
         matches = list(re.finditer(r'```[a-zA-Z0-9_\-\+\.]*[\r\n]+(.*?)```', response, re.DOTALL))

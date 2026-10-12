@@ -1,7 +1,17 @@
+"""
+pessoal/config_manager.py - Gerenciador Singleton de Arquivos de Configuração INI.
+
+Centraliza a leitura dos parâmetros estáticos definidos em `assets/config.ini`,
+como caminhos de ícones, arquivos de atalho legados, tempos de retentativa e
+valores padrão de inicialização.
+"""
+
 import configparser
 import os
+from typing import Optional
 
 class ConfigManager:
+    """Gerenciador Singleton para leitura das configurações do assets/config.ini."""
     _instance = None
     _config = None
 
@@ -12,12 +22,13 @@ class ConfigManager:
         return cls._instance
 
     def _initialize(self):
+        """Carrega e analisa o arquivo assets/config.ini com codificação UTF-8."""
         self._config = configparser.ConfigParser()
         config_path = os.path.join('assets', 'config.ini')
         self._config.read(config_path, encoding='utf-8')
 
-    def get(self, section, key):
-        """Get a configuration value"""
+    def get(self, section: str, key: str) -> str:
+        """Retorna o valor em formato string para a seção e chave especificadas."""
         try:
             return self._config[section][key]
         except KeyError:

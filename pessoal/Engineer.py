@@ -1,3 +1,11 @@
+"""
+pessoal/Engineer.py - Módulo de Automação de Área de Transferência e Teclado.
+
+Responsável por capturar o texto atualmente selecionado no aplicativo em foco
+(pré-processamento), injetar feedback visual transitório ao usuário e colar a
+resposta final processada pela Inteligência Artificial (pós-processamento).
+"""
+
 import pyperclip
 from pynput.keyboard import Key, Controller
 from time import sleep
@@ -6,12 +14,22 @@ from pessoal.config_manager import ConfigManager
 keyboard = Controller()
 
 class Engineer:
+    """Gerencia a captura da seleção de texto e inserção da resposta via clipboard."""
+
     def __init__(self, logger_from):
+        """Inicializa o Engineer com o logger fornecido e o gerenciador de configurações."""
         global logger
         logger = logger_from
         self.config = ConfigManager()
         
-    def pre_processamento(self, mode='shortcut_melhore_file'):
+    def pre_processamento(self, mode='shortcut_melhore_file') -> str:
+        """
+        Captura o texto selecionado na janela ativa simulando Ctrl+C.
+        
+        Substitui temporariamente o texto selecionado por 'Processando' para dar
+        feedback visual imediato ao usuário enquanto a IA realiza o processamento.
+        Retorna a string capturada ou vazia caso nada válido seja selecionado.
+        """
         with open(self.config.get('GTRAY', mode), 'r') as f:
             shortcut = f.read()
 
@@ -59,7 +77,11 @@ class Engineer:
         return input
     
     @staticmethod
-    def pos_processamento(clipboard, response):
+    def pos_processamento(clipboard: str, response: str) -> None:
+        """
+        Copia a resposta gerada pela IA para a área de transferência e simula Ctrl+V
+        no campo em foco para colar o resultado no lugar do texto original.
+        """
         pyperclip.copy(response)
         sleep(0.1)
         with keyboard.pressed(Key.ctrl):
