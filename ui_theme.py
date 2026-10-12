@@ -120,6 +120,26 @@ def get_theme_stylesheet(theme_name: str = 'dark') -> str:
         color: {p['accent']};
     }}
 
+    QLabel[class="flashSuccess"] {{
+        background-color: rgba(34, 197, 94, 0.18);
+        border: 1px solid #22C55E;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-weight: 600;
+        font-size: 12px;
+        color: #4ADE80;
+    }}
+
+    QLabel[class="flashWarning"] {{
+        background-color: rgba(239, 68, 68, 0.18);
+        border: 1px solid #EF4444;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-weight: 600;
+        font-size: 12px;
+        color: #F87171;
+    }}
+
     /* Campos de Entrada (QLineEdit, QPlainTextEdit, QTextEdit) */
     QLineEdit, QPlainTextEdit, QTextEdit {{
         background-color: {p['input_bg']};

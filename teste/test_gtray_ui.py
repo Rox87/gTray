@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 import sys
 import os
 from PyQt5.QtWidgets import QApplication, QLineEdit
@@ -114,6 +115,119 @@ class TestGTrayUI(unittest.TestCase):
         if os.path.exists(test_cfg):
             os.remove(test_cfg)
 
+        ui.close()
+
+    def test_flash_message_on_save_and_delete(self):
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QMessageBox
+        from GTray import GTray_CFG_UI
+        ui = GTray_CFG_UI()
+
+        # Componente deve existir e começar invisível
+        self.assertTrue(hasattr(ui, 'lbl_flash_message'))
+        self.assertFalse(ui.lbl_flash_message.isVisible())
+
+        # Teste chamada direta show_flash_message
+        ui.show_flash_message("Operação com sucesso!", "success")
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("Operação com sucesso!", ui.lbl_flash_message.text())
+
+        # Teste Salvar Atalho exibe flash message
+        ui.input_shortcut_name.setText('flash_test_sc')
+        ui.lbl_shortcut_key.setText('F12')
+        ui.combo_shortcut_model.setCurrentText('gpt-4o-mini')
+        ui.save_shortcut(show_msg=True)
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("salvo", ui.lbl_flash_message.text().lower())
+
+        # Teste Excluir Atalho exibe flash message
+        with patch.object(QMessageBox, 'question', return_value=QMessageBox.Yes):
+            ui.delete_shortcut()
+            self.assertTrue(ui.lbl_flash_message.isVisible())
+            self.assertIn("excluído", ui.lbl_flash_message.text().lower())
+
+        # Limpeza
+        ui.data_manager.delete_shortcut('flash_test_sc')
+        test_cfg = os.path.join('assets', 'shortcut_flash_test_sc.cfg')
+        if os.path.exists(test_cfg):
+            os.remove(test_cfg)
+        ui.close()
+
+    def test_buttons_click_shows_friendly_feedback(self):
+        from GTray import GTray_CFG_UI
+        ui = GTray_CFG_UI()
+
+        # 1. Salvar Atalho - Fracasso (nome vazio via clique do botão)
+        ui.input_shortcut_name.clear()
+        ui.btn_save_shortcut.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("nome", ui.lbl_flash_message.text().lower())
+
+        # 2. Salvar Atalho - Sucesso via clique do botão
+        ui.input_shortcut_name.setText('btn_sc_test')
+        ui.lbl_shortcut_key.setText('F8')
+        ui.combo_shortcut_model.setCurrentText('gpt-4o-mini')
+        ui.btn_save_shortcut.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("salvo", ui.lbl_flash_message.text().lower())
+
+        # 3. Salvar Modelo - Fracasso (nome vazio via clique do botão)
+        ui.input_model_name.clear()
+        ui.btn_save_model.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("nome", ui.lbl_flash_message.text().lower())
+
+        # 4. Salvar Modelo - Fracasso (sem provedor selecionado)
+        ui.input_model_name.setText('btn_model_test')
+        ui.combo_model_provider.setCurrentIndex(-1)
+        ui.btn_save_model.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("provedor", ui.lbl_flash_message.text().lower())
+
+        # 5. Salvar Modelo - Sucesso via clique do botão
+        available_providers = list(ui.data_manager.get_providers().keys())
+        prov_name = available_providers[0] if available_providers else 'openai'
+        ui.combo_model_provider.setCurrentText(prov_name)
+        ui.btn_save_model.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("salvo", ui.lbl_flash_message.text().lower())
+
+        # 6. Salvar Provedor - Fracasso via clique do botão (nome vazio)
+        ui.input_provider_name.clear()
+        ui.btn_save_provider.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("nome", ui.lbl_flash_message.text().lower())
+
+        # 7. Salvar Provedor - Sucesso via clique do botão
+        ui.input_provider_name.setText('btn_prov_test')
+        ui.input_provider_key.setText('test-key-123')
+        ui.btn_save_provider.click()
+        self.assertTrue(ui.lbl_flash_message.isVisible())
+        self.assertIn("salvo", ui.lbl_flash_message.text().lower())
+
+        # 8. Teste de Falha por Exceção (Atalho, Modelo e Provedor)
+        with patch.object(ui.data_manager, 'set_shortcut', side_effect=RuntimeError("Disk full")):
+            ui.btn_save_shortcut.click()
+            self.assertTrue(ui.lbl_flash_message.isVisible())
+            self.assertIn("falha", ui.lbl_flash_message.text().lower())
+
+        with patch.object(ui.data_manager, 'set_model', side_effect=RuntimeError("Disk full")):
+            ui.btn_save_model.click()
+            self.assertTrue(ui.lbl_flash_message.isVisible())
+            self.assertIn("falha", ui.lbl_flash_message.text().lower())
+
+        with patch.object(ui.data_manager, 'set_provider', side_effect=RuntimeError("Disk full")):
+            ui.btn_save_provider.click()
+            self.assertTrue(ui.lbl_flash_message.isVisible())
+            self.assertIn("falha", ui.lbl_flash_message.text().lower())
+
+        # Limpeza
+        ui.data_manager.delete_shortcut('btn_sc_test')
+        ui.data_manager.delete_model('btn_model_test')
+        ui.data_manager.delete_provider('btn_prov_test')
+        test_cfg = os.path.join('assets', 'shortcut_btn_sc_test.cfg')
+        if os.path.exists(test_cfg):
+            os.remove(test_cfg)
         ui.close()
 
 if __name__ == '__main__':

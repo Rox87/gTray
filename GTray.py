@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
     QComboBox, QFrame, QTabWidget, QPlainTextEdit
 )
-from PyQt5.QtCore import Qt, QUrl, QEvent
+from PyQt5.QtCore import Qt, QUrl, QEvent, QTimer
 from PyQt5.QtGui import QPixmap, QDesktopServices, QIcon
 from services.klisten import KListen
 from handler import Gtray
@@ -154,6 +154,14 @@ class GTray_CFG_UI(QWidget):
         footer_layout.addWidget(self.btn_minimize, stretch=1)
         self.root_layout.addLayout(footer_layout)
 
+        # Mensagem Flash (no centro da parte inferior)
+        self.lbl_flash_message = QLabel("")
+        self.lbl_flash_message.setAlignment(Qt.AlignCenter)
+        self.lbl_flash_message.setProperty('class', 'flashSuccess')
+        self.lbl_flash_message.setFixedHeight(28)
+        self.lbl_flash_message.hide()
+        self.root_layout.addWidget(self.lbl_flash_message)
+
         self.setLayout(self.root_layout)
 
         # Inicialização do Tema e dados
@@ -166,6 +174,30 @@ class GTray_CFG_UI(QWidget):
 
         self.pos_left()
         self.show()
+
+    def show_flash_message(self, message: str, msg_type: str = "success"):
+        if msg_type == "success":
+            icon = "✓ "
+        elif msg_type == "warning":
+            icon = "⚠ "
+        elif msg_type == "danger":
+            icon = "🗑 "
+        else:
+            icon = "✖ "
+        self.lbl_flash_message.setText(f"{icon}{message}")
+        if msg_type in ("warning", "danger", "error"):
+            self.lbl_flash_message.setProperty('class', 'flashWarning')
+        else:
+            self.lbl_flash_message.setProperty('class', 'flashSuccess')
+        self.lbl_flash_message.style().unpolish(self.lbl_flash_message)
+        self.lbl_flash_message.style().polish(self.lbl_flash_message)
+        self.lbl_flash_message.show()
+        if not hasattr(self, 'flash_timer'):
+            self.flash_timer = QTimer(self)
+            self.flash_timer.setSingleShot(True)
+            self.flash_timer.timeout.connect(self.lbl_flash_message.hide)
+        self.flash_timer.stop()
+        self.flash_timer.start(3000)
 
     # -------------------------------------------------------------
     # SETUP: ABA ATALHOS (Nome, Tecla e Modelo)
@@ -266,7 +298,7 @@ class GTray_CFG_UI(QWidget):
         btn_row = QHBoxLayout()
         self.btn_save_shortcut = QPushButton("Salvar Atalho")
         self.btn_save_shortcut.setProperty('class', 'primary')
-        self.btn_save_shortcut.clicked.connect(self.save_shortcut)
+        self.btn_save_shortcut.clicked.connect(lambda: self.save_shortcut(show_msg=True))
 
         self.btn_del_shortcut = QPushButton("Excluir")
         self.btn_del_shortcut.setProperty('class', 'danger')
@@ -331,7 +363,7 @@ class GTray_CFG_UI(QWidget):
         btn_row = QHBoxLayout()
         self.btn_save_model = QPushButton("Salvar Modelo")
         self.btn_save_model.setProperty('class', 'primary')
-        self.btn_save_model.clicked.connect(self.save_model)
+        self.btn_save_model.clicked.connect(lambda: self.save_model(show_msg=True))
 
         self.btn_del_model = QPushButton("Excluir")
         self.btn_del_model.setProperty('class', 'danger')
@@ -418,7 +450,7 @@ class GTray_CFG_UI(QWidget):
         btn_row = QHBoxLayout()
         self.btn_save_provider = QPushButton("Salvar Provedor")
         self.btn_save_provider.setProperty('class', 'primary')
-        self.btn_save_provider.clicked.connect(self.save_provider)
+        self.btn_save_provider.clicked.connect(lambda: self.save_provider(show_msg=True))
 
         self.btn_del_provider = QPushButton("Excluir")
         self.btn_del_provider.setProperty('class', 'danger')
@@ -511,31 +543,40 @@ class GTray_CFG_UI(QWidget):
         self.input_provider_url.clear()
         self.input_provider_name.setFocus()
 
-    def save_provider(self, show_msg: bool = True):
+    def save_provider(self, *args, show_msg: bool = True):
         name = self.input_provider_name.text().strip()
         key = self.input_provider_key.text().strip()
         url = self.input_provider_url.text().strip() or None
         if not name:
             if show_msg:
-                QMessageBox.warning(self, "Aviso", "O nome do provedor não pode ser vazio.")
+                self.show_flash_message("Informe o nome do provedor para salvar.", "warning")
             return
-        self.data_manager.set_provider(name, key, base_url=url)
-        self.refresh_providers_dropdown()
-        self.combo_providers.setCurrentText(name)
-        if show_msg:
-            QMessageBox.information(self, "Sucesso", f"Provedor '{name}' salvo com sucesso!")
+        try:
+            self.data_manager.set_provider(name, key, base_url=url)
+            self.refresh_providers_dropdown()
+            self.combo_providers.setCurrentText(name)
+            if show_msg:
+                self.show_flash_message(f"Provedor '{name}' salvo com sucesso!", "success")
+        except Exception as e:
+            if show_msg:
+                self.show_flash_message(f"Falha ao salvar provedor: {str(e)}", "danger")
 
-    def delete_provider(self):
+    def delete_provider(self, *args):
         name = self.input_provider_name.text().strip()
         if not name:
+            self.show_flash_message("Selecione um provedor para excluir.", "warning")
             return
         confirm = QMessageBox.question(
             self, "Confirmar", f"Deseja excluir o provedor '{name}'?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
-            self.data_manager.delete_provider(name)
-            self.refresh_providers_dropdown()
+            try:
+                self.data_manager.delete_provider(name)
+                self.refresh_providers_dropdown()
+                self.show_flash_message(f"Provedor '{name}' excluído com sucesso!", "danger")
+            except Exception as e:
+                self.show_flash_message(f"Falha ao excluir provedor: {str(e)}", "danger")
 
     # Handlers da Aba Modelos
     def on_model_selected(self, name):
@@ -551,34 +592,43 @@ class GTray_CFG_UI(QWidget):
         self.input_model_name.clear()
         self.input_model_name.setFocus()
 
-    def save_model(self, show_msg: bool = True):
+    def save_model(self, *args, show_msg: bool = True):
         name = self.input_model_name.text().strip()
         provider = self.combo_model_provider.currentText().strip()
         if not name:
             if show_msg:
-                QMessageBox.warning(self, "Aviso", "O nome do modelo não pode ser vazio.")
+                self.show_flash_message("Informe o nome do modelo para salvar.", "warning")
             return
         if not provider:
             if show_msg:
-                QMessageBox.warning(self, "Aviso", "Cadastre e selecione um provedor primeiro.")
+                self.show_flash_message("Cadastre e selecione um provedor associado ao modelo.", "warning")
             return
-        self.data_manager.set_model(name, provider)
-        self.refresh_models_dropdown()
-        self.combo_models.setCurrentText(name)
-        if show_msg:
-            QMessageBox.information(self, "Sucesso", f"Modelo '{name}' salvo com sucesso!")
+        try:
+            self.data_manager.set_model(name, provider)
+            self.refresh_models_dropdown()
+            self.combo_models.setCurrentText(name)
+            if show_msg:
+                self.show_flash_message(f"Modelo '{name}' salvo com sucesso!", "success")
+        except Exception as e:
+            if show_msg:
+                self.show_flash_message(f"Falha ao salvar modelo: {str(e)}", "danger")
 
-    def delete_model(self):
+    def delete_model(self, *args):
         name = self.input_model_name.text().strip()
         if not name:
+            self.show_flash_message("Selecione um modelo para excluir.", "warning")
             return
         confirm = QMessageBox.question(
             self, "Confirmar", f"Deseja excluir o modelo '{name}'?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
-            self.data_manager.delete_model(name)
-            self.refresh_models_dropdown()
+            try:
+                self.data_manager.delete_model(name)
+                self.refresh_models_dropdown()
+                self.show_flash_message(f"Modelo '{name}' excluído com sucesso!", "danger")
+            except Exception as e:
+                self.show_flash_message(f"Falha ao excluir modelo: {str(e)}", "danger")
 
     # Handlers da Aba Atalhos
     def on_shortcut_selected(self, name):
@@ -612,7 +662,7 @@ class GTray_CFG_UI(QWidget):
         self.input_comment_char.setText("#")
         self.input_shortcut_name.setFocus()
 
-    def save_shortcut(self, show_msg: bool = True):
+    def save_shortcut(self, *args, show_msg: bool = True):
         name = self.input_shortcut_name.text().strip()
         key = self.lbl_shortcut_key.text().strip()
         if key == "(nenhuma)":
@@ -623,30 +673,39 @@ class GTray_CFG_UI(QWidget):
         comment_char = self.input_comment_char.text().strip() or "#"
         if not name:
             if show_msg:
-                QMessageBox.warning(self, "Aviso", "O nome do atalho não pode ser vazio.")
+                self.show_flash_message("Informe o nome do atalho para salvar.", "warning")
             return
-        self.data_manager.set_shortcut(
-            name, key, model,
-            system_prompt=system_prompt,
-            extract_blocks=extract_blocks,
-            comment_char=comment_char
-        )
-        self.refresh_shortcuts_dropdown()
-        self.combo_shortcuts.setCurrentText(name)
-        if show_msg:
-            QMessageBox.information(self, "Sucesso", f"Atalho '{name}' salvo com sucesso!")
+        try:
+            self.data_manager.set_shortcut(
+                name, key, model,
+                system_prompt=system_prompt,
+                extract_blocks=extract_blocks,
+                comment_char=comment_char
+            )
+            self.refresh_shortcuts_dropdown()
+            self.combo_shortcuts.setCurrentText(name)
+            if show_msg:
+                self.show_flash_message(f"Atalho '{name}' salvo com sucesso!", "success")
+        except Exception as e:
+            if show_msg:
+                self.show_flash_message(f"Falha ao salvar atalho: {str(e)}", "danger")
 
-    def delete_shortcut(self):
+    def delete_shortcut(self, *args):
         name = self.input_shortcut_name.text().strip()
         if not name:
+            self.show_flash_message("Selecione um atalho para excluir.", "warning")
             return
         confirm = QMessageBox.question(
             self, "Confirmar", f"Deseja excluir o atalho '{name}'?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if confirm == QMessageBox.Yes:
-            self.data_manager.delete_shortcut(name)
-            self.refresh_shortcuts_dropdown()
+            try:
+                self.data_manager.delete_shortcut(name)
+                self.refresh_shortcuts_dropdown()
+                self.show_flash_message(f"Atalho '{name}' excluído com sucesso!", "danger")
+            except Exception as e:
+                self.show_flash_message(f"Falha ao excluir atalho: {str(e)}", "danger")
 
     def listen_shortcut_key(self):
         name = self.input_shortcut_name.text().strip() or "upgrade"
