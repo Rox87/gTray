@@ -1,21 +1,18 @@
 {
   "providers": {
-    "openai": {
-      "api_key": ""
+    "deepseek": {
+      "api_key": "sk-db40eef0bbf04f7db63d455fe026182e"
     }
   },
   "models": {
-    "gpt-4o-mini": {
-      "provider": "openai"
-    },
-    "gpt-4o": {
-      "provider": "openai"
+    "deepseek-flash": {
+      "provider": "deepseek"
     }
   },
   "shortcuts": {
     "upgrade": {
-      "key": "F8",
-      "model": "gpt-4o-mini"
+      "key": "F9",
+      "model": "deepseek-flash"
     },
     "generic": {
       "key": "F7+CTRL+X",

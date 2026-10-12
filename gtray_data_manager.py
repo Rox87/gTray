@@ -12,6 +12,18 @@ from typing import Dict, Any, Optional
 
 DEFAULT_DATA_PATH = os.path.join('assets', 'gtray_data.json')
 
+DEFAULT_PROVIDER_BASE_URLS: Dict[str, str] = {
+    'openai': 'https://api.openai.com/v1',
+    'deepseek': 'https://api.deepseek.com',
+    'groq': 'https://api.groq.com/openai/v1',
+    'openrouter': 'https://openrouter.ai/api/v1',
+    'ollama': 'http://localhost:11434/v1',
+    'together': 'https://api.together.xyz/v1',
+    'mistral': 'https://api.mistral.ai/v1',
+    'gemini': 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    'google': 'https://generativelanguage.googleapis.com/v1beta/openai/',
+}
+
 class GTrayDataManager:
     def __init__(self, filepath: str = DEFAULT_DATA_PATH, sync_legacy: bool = True):
         self.filepath = filepath
@@ -130,13 +142,22 @@ class GTrayDataManager:
             return p["api_key"]
         return None
 
-    def set_provider(self, name: str, api_key: str):
+    def get_provider_base_url(self, name: str) -> Optional[str]:
+        p = self.data.get("providers", {}).get(name)
+        if p and "base_url" in p and p["base_url"]:
+            return p["base_url"].strip()
+        return DEFAULT_PROVIDER_BASE_URLS.get(name.lower().strip())
+
+    def set_provider(self, name: str, api_key: str, base_url: Optional[str] = None):
         name = name.strip()
         if not name:
             return
         if "providers" not in self.data:
             self.data["providers"] = {}
-        self.data["providers"][name] = {"api_key": api_key.strip()}
+        prov_dict = {"api_key": api_key.strip()}
+        if base_url and base_url.strip():
+            prov_dict["base_url"] = base_url.strip()
+        self.data["providers"][name] = prov_dict
         self.save()
 
     def delete_provider(self, name: str):
@@ -206,11 +227,13 @@ class GTrayDataManager:
         
         provider_name = self.get_model_provider(model_name) or "openai"
         api_key = self.get_provider_key(provider_name) or ""
+        base_url = self.get_provider_base_url(provider_name)
 
         return {
             "shortcut_name": shortcut_name,
             "key": key,
             "model_name": model_name,
             "provider_name": provider_name,
-            "api_key": api_key
+            "api_key": api_key,
+            "base_url": base_url
         }

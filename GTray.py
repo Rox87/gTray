@@ -370,6 +370,17 @@ class GTray_CFG_UI(QWidget):
         key_box.addLayout(key_row)
         layout.addLayout(key_box)
 
+        # URL Base (Opcional)
+        url_box = QVBoxLayout()
+        url_box.setSpacing(2)
+        lbl_url = QLabel("URL Base da API (opcional):")
+        lbl_url.setProperty('class', 'headerSubtitle')
+        self.input_provider_url = QLineEdit()
+        self.input_provider_url.setPlaceholderText("ex: https://api.deepseek.com (automático se conhecido)")
+        url_box.addWidget(lbl_url)
+        url_box.addWidget(self.input_provider_url)
+        layout.addLayout(url_box)
+
         # Botões de Ação
         btn_row = QHBoxLayout()
         self.btn_save_provider = QPushButton("Salvar Provedor")
@@ -453,24 +464,29 @@ class GTray_CFG_UI(QWidget):
         if not name:
             self.input_provider_name.clear()
             self.input_provider_key.clear()
+            self.input_provider_url.clear()
             return
         key = self.data_manager.get_provider_key(name) or ""
+        url = self.data_manager.get_providers().get(name, {}).get("base_url", "")
         self.input_provider_name.setText(name)
         self.input_provider_key.setText(key)
+        self.input_provider_url.setText(url)
 
     def new_provider(self):
         self.input_provider_name.clear()
         self.input_provider_key.clear()
+        self.input_provider_url.clear()
         self.input_provider_name.setFocus()
 
     def save_provider(self, show_msg: bool = True):
         name = self.input_provider_name.text().strip()
         key = self.input_provider_key.text().strip()
+        url = self.input_provider_url.text().strip() or None
         if not name:
             if show_msg:
                 QMessageBox.warning(self, "Aviso", "O nome do provedor não pode ser vazio.")
             return
-        self.data_manager.set_provider(name, key)
+        self.data_manager.set_provider(name, key, base_url=url)
         self.refresh_providers_dropdown()
         self.combo_providers.setCurrentText(name)
         if show_msg:

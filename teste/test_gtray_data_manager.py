@@ -59,13 +59,22 @@ class TestGTrayDataManager(unittest.TestCase):
         self.assertEqual(shortcut['key'], 'Ctrl+Shift+U')
         self.assertEqual(shortcut['model'], 'claude-3-5-sonnet')
 
-        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave
+        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave -> Base URL
         chain = self.manager.resolve_shortcut('upgrade')
         self.assertEqual(chain['shortcut_name'], 'upgrade')
         self.assertEqual(chain['key'], 'Ctrl+Shift+U')
         self.assertEqual(chain['model_name'], 'claude-3-5-sonnet')
         self.assertEqual(chain['provider_name'], 'anthropic')
         self.assertEqual(chain['api_key'], 'sk-ant-test')
+
+    def test_provider_base_url_auto_and_custom(self):
+        # Provedor conhecido automático (ex: deepseek)
+        self.manager.set_provider('deepseek', 'sk-ds-key')
+        self.assertEqual(self.manager.get_provider_base_url('deepseek'), 'https://api.deepseek.com')
+
+        # Provedor com base_url customizada
+        self.manager.set_provider('local_vllm', 'token-123', base_url='http://localhost:8000/v1')
+        self.assertEqual(self.manager.get_provider_base_url('local_vllm'), 'http://localhost:8000/v1')
 
     def test_persistence_between_instances(self):
         self.manager.set_provider('groq', 'gsk-123')

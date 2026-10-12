@@ -91,8 +91,10 @@ class Gtray:
             
     def stop(self):
         self.prosseguir = False
+        self.unregister_shortcuts()
         try:
-            self.icon.stop()
+            if hasattr(self, 'icon') and self.icon and getattr(self.icon, '_running', False):
+                self.icon.stop()
         except Exception as ex:
             logger.error(f"Error stopping icon: {str(ex)}")
 
@@ -107,8 +109,10 @@ class Gtray:
     def on_exit(self):
         logger.info("saindo da aplicação")
         self.prosseguir = False
+        self.unregister_shortcuts()
         try:
-            self.icon.stop()
+            if hasattr(self, 'icon') and self.icon and getattr(self.icon, '_running', False):
+                self.icon.stop()
         except Exception as ex:
             logger.error(f"Error stopping icon: {str(ex)}")
     @tempo_decorrido
@@ -123,8 +127,12 @@ class Gtray:
             resolved = self.data_manager.resolve_shortcut(mode)
             api_key = resolved.get('api_key')
             model_name = resolved.get('model_name')
-            if api_key and self.AI:
-                self.AI.change_key(api_key)
+            base_url = resolved.get('base_url')
+
+            if self.AI is None:
+                self.AI = IA(api_key or "", logger, base_url=base_url)
+            else:
+                self.AI.change_key(api_key, base_url=base_url)
 
             if mode == 'python':
                 response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name)
@@ -155,10 +163,11 @@ class Gtray:
             subprocess.run("python graphs_widget.py", shell=True, capture_output=False, text=True)
         except Exception as ex:
             logger.error(f"Error launching graphs widget: {str(ex)}")
-    def change_key(self, key):
+    def change_key(self, key, base_url=None):
         if self.AI is not None:
-            del self.AI
-        self.AI = IA(key, logger)
+            self.AI.change_key(key, base_url=base_url)
+        else:
+            self.AI = IA(key, logger, base_url=base_url)
 if __name__ == '__main__':
     app = Gtray()
     app.run()
