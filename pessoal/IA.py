@@ -30,7 +30,7 @@ class IA:
         if changed or not hasattr(self, 'client'):
             self._init_client()
 
-    def python_responder(self, prompt, mode='python', model_override=None):
+    def python_responder(self, prompt, mode='python', model_override=None, comment_char="#"):
         def detectar_caminho_arquivo(texto):
             padrao = r'@@([^@]+[\\/][^@]+)@'
             return re.findall(padrao, texto)
@@ -53,7 +53,13 @@ class IA:
                 messages=[{"role": "system", "content": "seja extremamente breve e retorne apenas o nome entre ** seguido do bloco código python para cada arquivo da solução a seguir: " + final_prompt}]
             )
             coms = response.choices[0].message.content
-            final_code = f'"""{final_prompt}"""\n'
+
+            comment = (comment_char or "#").strip()
+            if not comment:
+                comment = "#"
+
+            prompt_lines = [f"{comment} {line}".rstrip() for line in final_prompt.strip().splitlines()]
+            final_code = "\n".join(prompt_lines) + "\n" if prompt_lines else ""
 
             padrao = r'\*\*(.*?)\*\*\n```(.*?)\n(.*?)```'
             matches = re.findall(padrao, coms, re.DOTALL)
@@ -61,9 +67,18 @@ class IA:
             for match in matches:
                 filename, lang, bloco = match
                 logger.info(f"Generated code for: {filename}")
-                final_code += f'{lang} - {filename}\n{bloco}'
+                final_code += f'{comment} {lang.strip()} - {filename.strip()}\n{bloco.strip()}\n'
 
-            return final_code
+            if not matches:
+                code_pattern = r'```([a-zA-Z0-9_\-\+\.]*)\n(.*?)```'
+                code_matches = re.findall(code_pattern, coms, re.DOTALL)
+                for lang, bloco in code_matches:
+                    lang_label = lang.strip() or "python"
+                    final_code += f'{comment} {lang_label} - script.py\n{bloco.strip()}\n'
+                if not code_matches:
+                    final_code += coms
+
+            return final_code.rstrip()
 
         except (AuthenticationError, PermissionDeniedError) as auth_err:
             logger.error(f"AI authentication error (verifique chave/provedor): {str(auth_err)}")

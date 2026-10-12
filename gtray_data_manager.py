@@ -59,22 +59,30 @@ class GTrayDataManager:
                 "upgrade": {
                     "key": self._read_legacy_shortcut("upgrade", "F9"),
                     "model": "gpt-4o-mini",
-                    "system_prompt": "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada"
+                    "system_prompt": "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada",
+                    "extract_blocks": False,
+                    "comment_char": "#"
                 },
                 "generic": {
                     "key": self._read_legacy_shortcut("generic", "F7+CTRL+X"),
                     "model": "gpt-4o-mini",
-                    "system_prompt": ""
+                    "system_prompt": "",
+                    "extract_blocks": False,
+                    "comment_char": "#"
                 },
                 "python": {
                     "key": self._read_legacy_shortcut("python", "F10"),
                     "model": "gpt-4o-mini",
-                    "system_prompt": ""
+                    "system_prompt": "",
+                    "extract_blocks": False,
+                    "comment_char": "#"
                 },
                 "creation": {
                     "key": self._read_legacy_shortcut("creation", "F11"),
                     "model": "gpt-4o-mini",
-                    "system_prompt": ""
+                    "system_prompt": "",
+                    "extract_blocks": False,
+                    "comment_char": "#"
                 }
             }
         }
@@ -202,7 +210,7 @@ class GTrayDataManager:
     def get_shortcuts(self) -> Dict[str, Dict[str, str]]:
         return self.data.get("shortcuts", {})
 
-    def get_shortcut(self, name: str) -> Optional[Dict[str, str]]:
+    def get_shortcut(self, name: str) -> Optional[Dict[str, Any]]:
         sc = self.data.get("shortcuts", {}).get(name)
         if sc is not None:
             if "system_prompt" not in sc:
@@ -210,13 +218,21 @@ class GTrayDataManager:
                     sc["system_prompt"] = "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada"
                 else:
                     sc["system_prompt"] = ""
+            if "extract_blocks" not in sc:
+                sc["extract_blocks"] = False
+            if "comment_char" not in sc:
+                sc["comment_char"] = "#"
         return sc
 
-    def set_shortcut(self, name: str, key: str, model: str, system_prompt: str = ""):
+    def set_shortcut(self, name: str, key: str, model: str, system_prompt: str = "",
+                     extract_blocks: bool = False, comment_char: str = "#"):
         name = name.strip()
         key = key.strip()
         model = model.strip()
         system_prompt = system_prompt.strip()
+        comment_char = (comment_char or "#").strip()
+        if not comment_char:
+            comment_char = "#"
         if not name:
             return
         if "shortcuts" not in self.data:
@@ -224,7 +240,9 @@ class GTrayDataManager:
         self.data["shortcuts"][name] = {
             "key": key,
             "model": model,
-            "system_prompt": system_prompt
+            "system_prompt": system_prompt,
+            "extract_blocks": bool(extract_blocks),
+            "comment_char": comment_char
         }
         self.save()
 
@@ -241,6 +259,8 @@ class GTrayDataManager:
         key = sc.get("key", "")
         model_name = sc.get("model", "")
         system_prompt = sc.get("system_prompt", "")
+        extract_blocks = sc.get("extract_blocks", False)
+        comment_char = sc.get("comment_char", "#")
         
         provider_name = self.get_model_provider(model_name) or "openai"
         api_key = self.get_provider_key(provider_name) or ""
@@ -253,5 +273,7 @@ class GTrayDataManager:
             "provider_name": provider_name,
             "api_key": api_key,
             "base_url": base_url,
-            "system_prompt": system_prompt
+            "system_prompt": system_prompt,
+            "extract_blocks": extract_blocks,
+            "comment_char": comment_char
         }

@@ -7,6 +7,7 @@ from pessoal.IA import IA
 from pessoal.Engineer import Engineer
 from pessoal.config_manager import ConfigManager
 from gtray_data_manager import GTrayDataManager
+import re
 import subprocess
 import configparser
 config = configparser.ConfigParser()
@@ -23,6 +24,43 @@ def wait_hotkey_release():
 
     print("Hotkey released!")  
 class Gtray:
+    @staticmethod
+    def extract_code_blocks(response: str, comment_char: str = "#") -> str:
+        if not response:
+            return ""
+        matches = list(re.finditer(r'```[a-zA-Z0-9_\-\+\.]*[\r\n]+(.*?)```', response, re.DOTALL))
+        if not matches:
+            return response
+
+        comment = (comment_char or "#").strip()
+        if not comment:
+            comment = "#"
+
+        blocks = []
+        last_end = 0
+        for m in matches:
+            block_content = m.group(1).strip('\r\n')
+            preceding_text = response[last_end:m.start()]
+            last_end = m.end()
+
+            filename = ""
+            for line in reversed(preceding_text.splitlines()):
+                line_clean = line.strip()
+                if line_clean:
+                    words = line_clean.split()
+                    if words:
+                        first_word = words[0]
+                        cleaned_word = re.sub(r'^[*_`"\'\(\[]+|[*_`"\'\)\]:,]+$', '', first_word).strip()
+                        if cleaned_word:
+                            filename = cleaned_word
+                    break
+
+            if filename:
+                blocks.append(f"{comment} {filename}\n{block_content}")
+            else:
+                blocks.append(block_content)
+
+        return "\n\n".join(blocks)
     processo = None
     icon = None
     shortcut = None
@@ -139,10 +177,15 @@ class Gtray:
             else:
                 self.AI.change_key(api_key, base_url=base_url)
 
+            comment_char = resolved.get('comment_char', '#')
+
             if mode == 'python':
-                response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name)
+                response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name, comment_char=comment_char)
             else:
                 response = self.AI.responder(clipboard, system_cmd, mode=mode, model_override=model_name)
+                if resolved.get('extract_blocks', False) and response:
+                    response = self.extract_code_blocks(response, comment_char=comment_char)
+
             logger.info('entregando resposta')
             self.Engineer.pos_processamento(clipboard, response)
         except Exception as ex:

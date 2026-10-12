@@ -73,12 +73,17 @@ class TestGTrayUI(unittest.TestCase):
         self.assertIn('llama-test', ui.data_manager.get_models())
         self.assertEqual(ui.data_manager.get_model_provider('llama-test'), 'groq_test')
 
-        # 3. Salvar Atalho (nome, tecla, modelo e pre-comando)
+        # 3. Salvar Atalho (nome, tecla, modelo, pre-comando, extract_blocks e comment_char)
         self.assertTrue(hasattr(ui, 'input_shortcut_system_prompt'))
+        self.assertTrue(hasattr(ui, 'checkbox_extract_blocks'))
+        self.assertTrue(hasattr(ui, 'input_comment_char'))
+
         ui.input_shortcut_name.setText('custom_test')
         ui.lbl_shortcut_key.setText('Ctrl+Alt+T')
         ui.combo_shortcut_model.setCurrentText('llama-test')
         ui.input_shortcut_system_prompt.setPlainText("Instrução customizada de sistema")
+        ui.checkbox_extract_blocks.setChecked(True)
+        ui.input_comment_char.setText("//")
         ui.save_shortcut(show_msg=False)
 
         resolved = ui.data_manager.resolve_shortcut('custom_test')
@@ -87,12 +92,19 @@ class TestGTrayUI(unittest.TestCase):
         self.assertEqual(resolved['provider_name'], 'groq_test')
         self.assertEqual(resolved['api_key'], 'gsk-test-key')
         self.assertEqual(resolved['system_prompt'], "Instrução customizada de sistema")
+        self.assertTrue(resolved['extract_blocks'])
+        self.assertEqual(resolved['comment_char'], "//")
 
         # Testa seleção e novo atalho
         ui.new_shortcut()
         self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "")
+        self.assertFalse(ui.checkbox_extract_blocks.isChecked())
+        self.assertEqual(ui.input_comment_char.text(), "#")
+
         ui.on_shortcut_selected('custom_test')
         self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "Instrução customizada de sistema")
+        self.assertTrue(ui.checkbox_extract_blocks.isChecked())
+        self.assertEqual(ui.input_comment_char.text(), "//")
         
         # Limpa dados de teste
         ui.data_manager.delete_shortcut('custom_test')

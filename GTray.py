@@ -54,7 +54,7 @@ class GTray_CFG_UI(QWidget):
 
     def initUI(self):
         self.setWindowTitle('gTray')
-        self.setFixedSize(400, 640)
+        self.setFixedSize(400, 670)
 
         # Layout Principal
         self.root_layout = QVBoxLayout()
@@ -241,6 +241,26 @@ class GTray_CFG_UI(QWidget):
         prompt_box.addWidget(lbl_prompt)
         prompt_box.addWidget(self.input_shortcut_system_prompt)
         layout.addLayout(prompt_box)
+
+        # Extração de Blocos de Código
+        extract_box = QVBoxLayout()
+        extract_box.setSpacing(4)
+        extract_row = QHBoxLayout()
+        self.checkbox_extract_blocks = QCheckBox("Conteúdo de blocos apenas")
+        self.checkbox_extract_blocks.setChecked(False)
+
+        lbl_comment = QLabel("Comentário:")
+        lbl_comment.setProperty('class', 'headerSubtitle')
+        self.input_comment_char = QLineEdit()
+        self.input_comment_char.setText("#")
+        self.input_comment_char.setPlaceholderText("#")
+        self.input_comment_char.setFixedWidth(50)
+
+        extract_row.addWidget(self.checkbox_extract_blocks, stretch=1)
+        extract_row.addWidget(lbl_comment)
+        extract_row.addWidget(self.input_comment_char)
+        extract_box.addLayout(extract_row)
+        layout.addLayout(extract_box)
 
         # Botões de Ação
         btn_row = QHBoxLayout()
@@ -566,22 +586,30 @@ class GTray_CFG_UI(QWidget):
             self.input_shortcut_name.clear()
             self.lbl_shortcut_key.setText("(nenhuma)")
             self.input_shortcut_system_prompt.clear()
+            self.checkbox_extract_blocks.setChecked(False)
+            self.input_comment_char.setText("#")
             return
         sc = self.data_manager.get_shortcut(name) or {}
         key = sc.get("key", "")
         model = sc.get("model", "")
         system_prompt = sc.get("system_prompt", "")
+        extract_blocks = sc.get("extract_blocks", False)
+        comment_char = sc.get("comment_char", "#")
 
         self.input_shortcut_name.setText(name)
         self.lbl_shortcut_key.setText(key if key else "(nenhuma)")
         if model:
             self.combo_shortcut_model.setCurrentText(model)
         self.input_shortcut_system_prompt.setPlainText(system_prompt)
+        self.checkbox_extract_blocks.setChecked(bool(extract_blocks))
+        self.input_comment_char.setText(comment_char if comment_char else "#")
 
     def new_shortcut(self):
         self.input_shortcut_name.clear()
         self.lbl_shortcut_key.setText("(nenhuma)")
         self.input_shortcut_system_prompt.clear()
+        self.checkbox_extract_blocks.setChecked(False)
+        self.input_comment_char.setText("#")
         self.input_shortcut_name.setFocus()
 
     def save_shortcut(self, show_msg: bool = True):
@@ -591,11 +619,18 @@ class GTray_CFG_UI(QWidget):
             key = ""
         model = self.combo_shortcut_model.currentText().strip()
         system_prompt = self.input_shortcut_system_prompt.toPlainText().strip()
+        extract_blocks = self.checkbox_extract_blocks.isChecked()
+        comment_char = self.input_comment_char.text().strip() or "#"
         if not name:
             if show_msg:
                 QMessageBox.warning(self, "Aviso", "O nome do atalho não pode ser vazio.")
             return
-        self.data_manager.set_shortcut(name, key, model, system_prompt=system_prompt)
+        self.data_manager.set_shortcut(
+            name, key, model,
+            system_prompt=system_prompt,
+            extract_blocks=extract_blocks,
+            comment_char=comment_char
+        )
         self.refresh_shortcuts_dropdown()
         self.combo_shortcuts.setCurrentText(name)
         if show_msg:
