@@ -1,0 +1,122 @@
+<h2>Qual direção visual você prefere para o gTray?</h2>
+<p class="subtitle">O gTray atual tem cores fortes e elementos muito grandes que pesam na tela. Abaixo estão 3 propostas minimalistas e refinadas para transformar o app:</p>
+
+<div class="cards">
+  <div class="card" data-choice="dark-slate" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="background:#0b0d13; padding:20px; border-radius:8px;">
+      <!-- Mockup Window A -->
+      <div style="background:#13161f; border:1px solid #232838; border-radius:10px; padding:18px; color:#e2e8f0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:320px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #232838; padding-bottom:12px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(135deg, #3b82f6, #6366f1); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; color:white;">G</div>
+            <span style="font-weight:600; font-size:14px; letter-spacing:0.3px;">gTray</span>
+          </div>
+          <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; background:rgba(34,197,94,0.15); color:#4ade80; padding:3px 8px; border-radius:12px; font-weight:500;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#22c55e;"></span> Ativo
+          </span>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Modo & Atalho</label>
+          <div style="display:flex; gap:6px;">
+            <div style="background:#1e2330; border:1px solid #2d3448; border-radius:6px; padding:6px 10px; font-size:12px; flex:1; color:#cbd5e1;">Upgrade Text</div>
+            <div style="background:#282f42; border:1px solid #3b445c; border-radius:6px; padding:6px 8px; font-size:11px; font-family:monospace; color:#93c5fd;">Ctrl+Shift+G</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">OpenAI API Key</label>
+          <div style="background:#1a1e2a; border:1px solid #2a3144; border-radius:6px; padding:7px 10px; font-size:11px; color:#64748b; font-family:monospace; display:flex; justify-content:space-between; align-items:center;">
+            <span>sk-••••••••••••39a1</span>
+            <span style="font-size:10px; color:#38bdf8; text-transform:none; cursor:pointer;">Alterar</span>
+          </div>
+        </div>
+
+        <button style="width:100%; background:#2563eb; hover:background:#1d4ed8; color:white; border:none; padding:8px 0; border-radius:6px; font-weight:500; font-size:12px; cursor:pointer;">
+          Minimizar para a Bandeja
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Opção A: Dark Mode Studio (Estilo Raycast / Cursor)</h3>
+      <p>Tema escuro fosco, bordas sutis e tipografia precisa. Visual sóbrio e profissional que desaparece suavemente no seu fluxo de trabalho sem chamar atenção desnecessária.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="fluent-clean" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="background:#f1f5f9; padding:20px; border-radius:8px;">
+      <!-- Mockup Window B -->
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:18px; color:#1e293b; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:320px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.06);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:12px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; border-radius:6px; background:#0f172a; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; color:white;">G</div>
+            <span style="font-weight:600; font-size:14px; color:#0f172a;">gTray</span>
+          </div>
+          <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; background:#f0fdf4; color:#15803d; padding:3px 8px; border-radius:12px; font-weight:500; border:1px solid #bbf7d0;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#16a34a;"></span> Conectado
+          </span>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Modo Ativo</label>
+          <div style="display:flex; gap:6px;">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; font-size:12px; flex:1; color:#334155;">Upgrade Text</div>
+            <div style="background:#e0e7ff; border:1px solid #c7d2fe; border-radius:6px; padding:6px 8px; font-size:11px; font-family:monospace; color:#3730a3;">Ctrl+Shift+G</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Chave da API</label>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:7px 10px; font-size:11px; color:#64748b; font-family:monospace; display:flex; justify-content:space-between; align-items:center;">
+            <span>sk-••••••••••••39a1</span>
+            <span style="font-size:10px; color:#2563eb; font-weight:500; cursor:pointer;">Editar</span>
+          </div>
+        </div>
+
+        <button style="width:100%; background:#0f172a; color:white; border:none; padding:8px 0; border-radius:6px; font-weight:500; font-size:12px; cursor:pointer;">
+          Ocultar Janela
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Opção B: Modern Clean Light (Estilo Windows 11 Fluent)</h3>
+      <p>Visual claro, minimalista e arejado. Fundo branco puro com tons de cinza suave e azul ardósia. Parece um aplicativo nativo e elegante do sistema operacional.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="compact-floating" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="background:#090d16; padding:20px; border-radius:8px;">
+      <!-- Mockup Window C -->
+      <div style="background:#111827; border:1px solid #1f2937; border-radius:14px; padding:16px; color:#f9fafb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:320px; margin:0 auto; box-shadow:0 12px 30px rgba(0,0,0,0.6);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:10px; height:10px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></div>
+            <span style="font-weight:600; font-size:13px;">gTray Runner</span>
+          </div>
+          <span style="font-size:10px; color:#9ca3af; background:#1f2937; padding:2px 8px; border-radius:10px;">gpt-4o-mini</span>
+        </div>
+
+        <div style="background:#1f2937; border-radius:8px; padding:10px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div style="font-size:10px; color:#9ca3af;">Atalho Global</div>
+            <div style="font-size:12px; font-weight:600; color:#60a5fa; font-family:monospace; margin-top:2px;">Ctrl+Shift+G</div>
+          </div>
+          <button style="background:#374151; color:#f3f4f6; border:none; padding:4px 8px; border-radius:5px; font-size:10px; cursor:pointer;">Trocar</button>
+        </div>
+
+        <div style="display:flex; gap:6px;">
+          <button style="flex:1; background:#10b981; color:#064e3b; border:none; padding:7px 0; border-radius:6px; font-weight:600; font-size:11px; cursor:pointer;">
+            Em Execução
+          </button>
+          <button style="background:#1f2937; color:#9ca3af; border:none; padding:7px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+            ⚙
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Opção C: Compact HUD / Floating Capsule</h3>
+      <p>Ultra-compacto e minimalista. Reduz a área da tela ao estritamente essencial: status iluminado, atalho ativo e botão de ação rápida, com detalhes secundários guardados em um menu discreto.</p>
+    </div>
+  </div>
+</div>
