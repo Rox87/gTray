@@ -92,7 +92,11 @@ class Gtray:
         self.initialize_ui()
     def initialize_ui(self):
         logger.info('carregando icones')
-        self.red_image = Image.open(self.config.get('GTRAY', 'gtON'))
+        from PIL import ImageFile
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        icon_path = self.config.get('GTRAY', 'gtON')
+        with Image.open(icon_path) as img:
+            self.red_image = img.copy()
         self.menu_visible = pystray.MenuItem("Mostrar UI", self.show_terminal)
         self.menu_exit = pystray.MenuItem("Sair", self.on_exit)
         self.icon = pystray.Icon("GPTray", self.red_image, menu=pystray.Menu())
@@ -100,7 +104,18 @@ class Gtray:
     def start(self):
         try:
             self.register_shortcuts()
-            logger.info(f'precione {self.shortcut} com um texto selecionado em um campo editavel e aguarde...')
+            shortcuts = {}
+            if hasattr(self, 'data_manager') and self.data_manager:
+                shortcuts = self.data_manager.get_shortcuts()
+            if hasattr(logger, 'log_shortcuts'):
+                logger.log_shortcuts(shortcuts, active_shortcut=self.shortcut)
+            else:
+                logger.info("Atalhos cadastrados:")
+                for name, data in shortcuts.items():
+                    key = data.get("key", "(nenhuma)") if isinstance(data, dict) else data
+                    logger.info(f" - {name}: {key}")
+                active = self.shortcut if self.shortcut else "o atalho configurado"
+                logger.info(f'pressione {active} com um texto selecionado em um campo editável e aguarde...')
         except Exception as ex:
             logger.error(f"Error starting application: {str(ex)}")
     def unregister_shortcuts(self):
@@ -128,6 +143,7 @@ class Gtray:
             keyboard.add_hotkey(shortcut.lower(), handlers[shortcut_type])
             
     def stop(self):
+        self._is_running = False
         self.prosseguir = False
         self.unregister_shortcuts()
         try:
@@ -137,17 +153,22 @@ class Gtray:
             logger.error(f"Error stopping icon: {str(ex)}")
 
     def run(self):
+        if getattr(self, '_is_running', False):
+            return
+        self._is_running = True
         try:
             if hasattr(self.icon, 'run_detached') and not getattr(self.icon, '_running', False):
                 self.icon.run_detached()
             elif not getattr(self.icon, '_running', False):
                 self.icon.run()
         except Exception as ex:
+            self._is_running = False
             logger.error(f"Error in main loop: {str(ex)}")
     def build_menu(self):
         self.icon.menu = pystray.Menu(self.menu_exit)
     def on_exit(self):
         logger.info("saindo da aplicação")
+        self._is_running = False
         self.prosseguir = False
         self.unregister_shortcuts()
         try:
@@ -155,6 +176,9 @@ class Gtray:
                 self.icon.stop()
         except Exception as ex:
             logger.error(f"Error stopping icon: {str(ex)}")
+        if self.UI:
+            from PyQt5.QtWidgets import QApplication
+            QApplication.quit()
     @tempo_decorrido
     def handle_ai_request(self, mode, prompt_modifier=""):
         try:

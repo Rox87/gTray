@@ -861,6 +861,7 @@ if __name__ == '__main__':
         file.write(f'{pid}')
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     ex = GTray_CFG_UI()
     try:
         if len(sys.argv) > 1 and sys.argv[1] == "1":
@@ -876,7 +877,7 @@ if __name__ == '__main__':
             ex.checkbox_visibility.setChecked(ex.visible)
             ex.hide()
             ex.startstop()
-            ex.gt.run()
+            sys.exit(app.exec_())
         else:
             raise Exception
     except Exception:
