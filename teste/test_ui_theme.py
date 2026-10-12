@@ -8,14 +8,16 @@ class TestUITheme(unittest.TestCase):
         self.assertIn('QPushButton', qss)
         self.assertIn('QLineEdit', qss)
 
-    def test_light_stylesheet_contains_palette(self):
-        qss = get_theme_stylesheet('light')
-        self.assertIn('#F8FAFC', qss.upper())
-        self.assertIn('QPushButton', qss)
+    def test_only_dark_palette_present(self):
+        from ui_theme import PALETTES
+        self.assertIn('dark', PALETTES)
+        self.assertNotIn('light', PALETTES)
 
-    def test_fallback_to_dark_for_unknown_theme(self):
-        qss = get_theme_stylesheet('unknown_theme')
-        self.assertEqual(qss, get_theme_stylesheet('dark'))
+    def test_default_stylesheet_is_dark(self):
+        qss_default = get_theme_stylesheet()
+        qss_dark = get_theme_stylesheet('dark')
+        self.assertEqual(qss_default, qss_dark)
+        self.assertIn('#0F172A', qss_default.upper())
 
     def test_status_badge_styles(self):
         active_style = get_status_badge_style(True, 'dark')

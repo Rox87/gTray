@@ -40,7 +40,7 @@ class GTray_CFG_UI(QWidget):
         self.lbl_shortcut_text = None
         self.button_get_shortcut_clicked = False
         self.index = 0
-        self.current_theme = config.get('GTRAY', 'tema', fallback='dark')
+        self.current_theme = 'dark'
         self.data_manager = GTrayDataManager()
 
         self.initUI()
@@ -90,21 +90,14 @@ class GTray_CFG_UI(QWidget):
         title_box.addWidget(self.header_title)
         title_box.addWidget(self.header_subtitle)
 
-        # Status & Toggle de Tema
+        # Status
         header_controls = QHBoxLayout()
         header_controls.setSpacing(8)
 
         self.lbl_status = QLabel("● Pausado")
         self.lbl_status.setAlignment(Qt.AlignCenter)
 
-        self.btn_theme_toggle = QPushButton("☀️" if self.current_theme == 'dark' else "🌙")
-        self.btn_theme_toggle.setProperty('class', 'iconBtn')
-        self.btn_theme_toggle.setFixedSize(32, 32)
-        self.btn_theme_toggle.setToolTip("Alternar Tema (Dark / Light)")
-        self.btn_theme_toggle.clicked.connect(self.toggle_theme)
-
         header_controls.addWidget(self.lbl_status)
-        header_controls.addWidget(self.btn_theme_toggle)
 
         header_layout.addWidget(self.logo_label)
         header_layout.addLayout(title_box, stretch=1)
@@ -619,32 +612,19 @@ class GTray_CFG_UI(QWidget):
     # -------------------------------------------------------------
     # GERENCIAMENTO DE TEMA E STATUS
     # -------------------------------------------------------------
-    def set_theme(self, theme_name: str, save_to_file: bool = True):
-        self.current_theme = theme_name
-        self.setStyleSheet(get_theme_stylesheet(self.current_theme))
-        self.btn_theme_toggle.setText("☀️" if self.current_theme == 'dark' else "🌙")
+    def set_theme(self, theme_name: str = 'dark', save_to_file: bool = False):
+        self.current_theme = 'dark'
+        self.setStyleSheet(get_theme_stylesheet('dark'))
         self.update_status_badge()
-
-        if save_to_file:
-            try:
-                config.set('GTRAY', 'tema', self.current_theme)
-                with open('assets/config.ini', 'w', encoding='utf-8') as f:
-                    config.write(f)
-            except Exception as e:
-                logger.error(f"Erro ao salvar tema: {e}")
-
-    def toggle_theme(self):
-        new_theme = 'light' if self.current_theme == 'dark' else 'dark'
-        self.set_theme(new_theme, save_to_file=True)
 
     def update_status_badge(self):
         is_running = (self.autostart is False and self.gt is not None)
         if is_running:
             self.lbl_status.setText("● Ativo")
-            self.lbl_status.setStyleSheet(get_status_badge_style(True, self.current_theme))
+            self.lbl_status.setStyleSheet(get_status_badge_style(True, 'dark'))
         else:
             self.lbl_status.setText("● Pausado")
-            self.lbl_status.setStyleSheet(get_status_badge_style(False, self.current_theme))
+            self.lbl_status.setStyleSheet(get_status_badge_style(False, 'dark'))
 
     def toggle_apikey_visibility(self):
         if self.input_provider_key.echoMode() == QLineEdit.Password:

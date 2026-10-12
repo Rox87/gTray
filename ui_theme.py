@@ -1,6 +1,6 @@
 """
-ui_theme.py - Módulo de temas e estilos QSS para o gTray.
-Fornece paletas e folhas de estilo para os temas Dark (padrão) e Light.
+ui_theme.py - Módulo de tema e estilo QSS escuro para o gTray.
+Fornece paleta Dark e folha de estilo moderna.
 """
 
 from typing import Dict, Any
@@ -31,43 +31,12 @@ PALETTES: Dict[str, Dict[str, str]] = {
         'status_inactive_bg': 'rgba(239, 68, 68, 0.15)',
         'status_inactive_text': '#EF4444',
         'accent': '#38BDF8',
-    },
-    'light': {
-        'window_bg': '#F8FAFC',
-        'card_bg': '#FFFFFF',
-        'inner_bg': '#F1F5F9',
-        'border': '#E2E8F0',
-        'border_focus': '#2563EB',
-        'text_primary': '#0F172A',
-        'text_secondary': '#64748B',
-        'btn_primary_bg': '#2563EB',
-        'btn_primary_hover': '#1D4ED8',
-        'btn_primary_text': '#FFFFFF',
-        'btn_danger_bg': '#DC2626',
-        'btn_danger_hover': '#B91C1C',
-        'btn_danger_text': '#FFFFFF',
-        'btn_neutral_bg': '#F1F5F9',
-        'btn_neutral_hover': '#E2E8F0',
-        'btn_neutral_text': '#1E293B',
-        'input_bg': '#FFFFFF',
-        'input_disabled_bg': '#F1F5F9',
-        'input_text': '#0F172A',
-        'status_active_bg': 'rgba(22, 163, 74, 0.12)',
-        'status_active_text': '#16A34A',
-        'status_inactive_bg': 'rgba(220, 38, 38, 0.12)',
-        'status_inactive_text': '#DC2626',
-        'accent': '#2563EB',
     }
 }
 
-def get_theme_stylesheet(theme_name: str) -> str:
-    """Retorna a folha de estilo QSS para o tema especificado ('dark' ou 'light').
-    Fallback para 'dark' caso o tema não seja reconhecido.
-    """
-    if theme_name not in PALETTES:
-        theme_name = 'dark'
-    
-    p = PALETTES[theme_name]
+def get_theme_stylesheet(theme_name: str = 'dark') -> str:
+    """Retorna a folha de estilo QSS para o tema escuro."""
+    p = PALETTES['dark']
     
     return f"""
     /* Janela e Base */
@@ -270,11 +239,9 @@ def get_theme_stylesheet(theme_name: str) -> str:
     }}
     """
 
-def get_status_badge_style(is_active: bool, theme_name: str) -> str:
+def get_status_badge_style(is_active: bool, theme_name: str = 'dark') -> str:
     """Retorna o estilo inline para a badge de status (Ativo / Pausado)."""
-    if theme_name not in PALETTES:
-        theme_name = 'dark'
-    p = PALETTES[theme_name]
+    p = PALETTES['dark']
     
     if is_active:
         return f"""

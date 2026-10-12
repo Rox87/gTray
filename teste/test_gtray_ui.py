@@ -13,14 +13,12 @@ class TestGTrayUI(unittest.TestCase):
         else:
             cls.app = QApplication.instance()
 
-    def test_theme_switch_updates_stylesheet(self):
+    def test_theme_is_dark_and_no_toggle(self):
         from GTray import GTray_CFG_UI
         ui = GTray_CFG_UI()
         self.assertEqual(ui.current_theme, 'dark')
-        ui.toggle_theme()
-        self.assertEqual(ui.current_theme, 'light')
-        ui.toggle_theme()
-        self.assertEqual(ui.current_theme, 'dark')
+        self.assertFalse(hasattr(ui, 'btn_theme_toggle'))
+        self.assertIn('#0F172A', ui.styleSheet().upper())
         ui.close()
 
     def test_api_key_visibility_toggle(self):
