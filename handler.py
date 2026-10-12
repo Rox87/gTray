@@ -99,11 +99,13 @@ class Gtray:
             logger.error(f"Error stopping icon: {str(ex)}")
 
     def run(self):
-        while self.prosseguir:
-            try:
+        try:
+            if hasattr(self.icon, 'run_detached') and not getattr(self.icon, '_running', False):
+                self.icon.run_detached()
+            elif not getattr(self.icon, '_running', False):
                 self.icon.run()
-            except Exception as ex:
-                logger.error(f"Error in main loop: {str(ex)}")
+        except Exception as ex:
+            logger.error(f"Error in main loop: {str(ex)}")
     def build_menu(self):
         self.icon.menu = pystray.Menu(self.menu_exit)
     def on_exit(self):

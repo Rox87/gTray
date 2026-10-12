@@ -672,8 +672,8 @@ class GTray_CFG_UI(QWidget):
             self.visible = True
             self.show()
 
-    def startstop(self):
-        if not hasattr(self.gt, 'UI'):
+    def start_service(self):
+        if not hasattr(self.gt, 'UI') or self.gt is None:
             self.gt = Gtray(self, logger)
         file_path = config['GTRAY']['k']
         if not os.path.isfile(file_path):
@@ -683,23 +683,38 @@ class GTray_CFG_UI(QWidget):
             self.apikey = f.read().strip()
             self.gt.change_key(self.apikey)
 
+        self.stop_buttons_def()
+        self.gt.start()
+        self.autostart = False
+        self.gt.run()
+
+    def stop_service(self):
+        self.start_buttons_def()
+        if self.gt is not None:
+            self.gt.stop()
+            del self.gt
+            self.gt = None
+        self.autostart = True
+
+    def startstop(self):
         if self.checkbox_visibility.isChecked():
             self.show()
         else:
             self.hide()
 
         if self.autostart is True:
-            self.stop_buttons_def()
-            self.gt.start()
-            self.autostart = False
-            self.gt.run()
-            print('saindo...')
+            self.start_service()
         else:
-            self.start_buttons_def()
-            self.gt.stop()
-            del self.gt
-            self.gt = None
-            self.autostart = True
+            self.stop_service()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.isMinimized():
+                self.setWindowState(Qt.WindowNoState)
+                self.hide_UI()
+                event.ignore()
+                return
+        super().changeEvent(event)
 
     def closeEvent(self, event):
         if self.gt is not None:
@@ -709,6 +724,8 @@ class GTray_CFG_UI(QWidget):
     def hide_UI(self):
         logger.info('app no plano de fundo')
         self.hide()
+        if not getattr(self, 'is_running', False):
+            self.start_service()
 
     def show_UI(self):
         logger.info('app visivel')
