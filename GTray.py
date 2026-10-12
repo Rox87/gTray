@@ -294,6 +294,13 @@ class GTray_CFG_UI(QWidget):
         extract_box.addLayout(extract_row)
         layout.addLayout(extract_box)
 
+        # Ativação do Atalho
+        enabled_row = QHBoxLayout()
+        self.checkbox_shortcut_enabled = QCheckBox("Atalho ativo")
+        self.checkbox_shortcut_enabled.setChecked(True)
+        enabled_row.addWidget(self.checkbox_shortcut_enabled)
+        layout.addLayout(enabled_row)
+
         # Botões de Ação
         btn_row = QHBoxLayout()
         self.btn_save_shortcut = QPushButton("Salvar Atalho")
@@ -638,6 +645,7 @@ class GTray_CFG_UI(QWidget):
             self.input_shortcut_system_prompt.clear()
             self.checkbox_extract_blocks.setChecked(False)
             self.input_comment_char.setText("#")
+            self.checkbox_shortcut_enabled.setChecked(True)
             return
         sc = self.data_manager.get_shortcut(name) or {}
         key = sc.get("key", "")
@@ -645,6 +653,7 @@ class GTray_CFG_UI(QWidget):
         system_prompt = sc.get("system_prompt", "")
         extract_blocks = sc.get("extract_blocks", False)
         comment_char = sc.get("comment_char", "#")
+        enabled = sc.get("enabled", True)
 
         self.input_shortcut_name.setText(name)
         self.lbl_shortcut_key.setText(key if key else "(nenhuma)")
@@ -653,6 +662,7 @@ class GTray_CFG_UI(QWidget):
         self.input_shortcut_system_prompt.setPlainText(system_prompt)
         self.checkbox_extract_blocks.setChecked(bool(extract_blocks))
         self.input_comment_char.setText(comment_char if comment_char else "#")
+        self.checkbox_shortcut_enabled.setChecked(bool(enabled))
 
     def new_shortcut(self):
         self.input_shortcut_name.clear()
@@ -660,6 +670,7 @@ class GTray_CFG_UI(QWidget):
         self.input_shortcut_system_prompt.clear()
         self.checkbox_extract_blocks.setChecked(False)
         self.input_comment_char.setText("#")
+        self.checkbox_shortcut_enabled.setChecked(True)
         self.input_shortcut_name.setFocus()
 
     def save_shortcut(self, *args, show_msg: bool = True):
@@ -671,6 +682,7 @@ class GTray_CFG_UI(QWidget):
         system_prompt = self.input_shortcut_system_prompt.toPlainText().strip()
         extract_blocks = self.checkbox_extract_blocks.isChecked()
         comment_char = self.input_comment_char.text().strip() or "#"
+        enabled = self.checkbox_shortcut_enabled.isChecked()
         if not name:
             if show_msg:
                 self.show_flash_message("Informe o nome do atalho para salvar.", "warning")
@@ -680,12 +692,16 @@ class GTray_CFG_UI(QWidget):
                 name, key, model,
                 system_prompt=system_prompt,
                 extract_blocks=extract_blocks,
-                comment_char=comment_char
+                comment_char=comment_char,
+                enabled=enabled
             )
             self.refresh_shortcuts_dropdown()
             self.combo_shortcuts.setCurrentText(name)
+            if getattr(self, 'is_running', False) and hasattr(self, 'gt') and self.gt:
+                self.gt.register_shortcuts()
             if show_msg:
-                self.show_flash_message(f"Atalho '{name}' salvo com sucesso!", "success")
+                status_txt = "ativo" if enabled else "inativo"
+                self.show_flash_message(f"Atalho '{name}' salvo ({status_txt}) com sucesso!", "success")
         except Exception as e:
             if show_msg:
                 self.show_flash_message(f"Falha ao salvar atalho: {str(e)}", "danger")

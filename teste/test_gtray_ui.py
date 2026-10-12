@@ -78,6 +78,8 @@ class TestGTrayUI(unittest.TestCase):
         self.assertTrue(hasattr(ui, 'input_shortcut_system_prompt'))
         self.assertTrue(hasattr(ui, 'checkbox_extract_blocks'))
         self.assertTrue(hasattr(ui, 'input_comment_char'))
+        self.assertTrue(hasattr(ui, 'checkbox_shortcut_enabled'))
+        self.assertTrue(ui.checkbox_shortcut_enabled.isChecked())
 
         ui.input_shortcut_name.setText('custom_test')
         ui.lbl_shortcut_key.setText('Ctrl+Alt+T')
@@ -85,6 +87,7 @@ class TestGTrayUI(unittest.TestCase):
         ui.input_shortcut_system_prompt.setPlainText("Instrução customizada de sistema")
         ui.checkbox_extract_blocks.setChecked(True)
         ui.input_comment_char.setText("//")
+        ui.checkbox_shortcut_enabled.setChecked(False)
         ui.save_shortcut(show_msg=False)
 
         resolved = ui.data_manager.resolve_shortcut('custom_test')
@@ -95,17 +98,20 @@ class TestGTrayUI(unittest.TestCase):
         self.assertEqual(resolved['system_prompt'], "Instrução customizada de sistema")
         self.assertTrue(resolved['extract_blocks'])
         self.assertEqual(resolved['comment_char'], "//")
+        self.assertFalse(resolved['enabled'])
 
         # Testa seleção e novo atalho
         ui.new_shortcut()
         self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "")
         self.assertFalse(ui.checkbox_extract_blocks.isChecked())
         self.assertEqual(ui.input_comment_char.text(), "#")
+        self.assertTrue(ui.checkbox_shortcut_enabled.isChecked())
 
         ui.on_shortcut_selected('custom_test')
         self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "Instrução customizada de sistema")
         self.assertTrue(ui.checkbox_extract_blocks.isChecked())
         self.assertEqual(ui.input_comment_char.text(), "//")
+        self.assertFalse(ui.checkbox_shortcut_enabled.isChecked())
         
         # Limpa dados de teste
         ui.data_manager.delete_shortcut('custom_test')

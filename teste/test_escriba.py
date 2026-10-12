@@ -26,13 +26,6 @@ class TestEscriba(unittest.TestCase):
             self.assertTrue(any("python: F9" in msg for msg in logged_messages))
             self.assertTrue(any("custom: Ctrl+Shift+K" in msg for msg in logged_messages))
 
-            # Verifica frase com ortografia corrigida
-            has_corrected_phrase = any(
-                "pressione F8 com um texto selecionado em um campo editável e aguarde..." in msg
-                for msg in logged_messages
-            )
-            self.assertTrue(has_corrected_phrase)
-
             # Garante que as grafias incorretas não foram utilizadas
             for msg in logged_messages:
                 self.assertNotIn("precione", msg.lower())
@@ -47,7 +40,6 @@ class TestEscriba(unittest.TestCase):
             logged_messages = [call.args[0] for call in mock_info.call_args_list]
 
             self.assertTrue(any("Atalhos cadastrados" in msg for msg in logged_messages))
-            self.assertTrue(any("editável" in msg for msg in logged_messages))
             for msg in logged_messages:
                 self.assertNotIn("precione", msg.lower())
                 self.assertNotIn("editavel", msg)

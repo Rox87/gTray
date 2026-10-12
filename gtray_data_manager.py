@@ -61,28 +61,32 @@ class GTrayDataManager:
                     "model": "gpt-4o-mini",
                     "system_prompt": "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada",
                     "extract_blocks": False,
-                    "comment_char": "#"
+                    "comment_char": "#",
+                    "enabled": True
                 },
                 "generic": {
                     "key": self._read_legacy_shortcut("generic", "F7+CTRL+X"),
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
-                    "comment_char": "#"
+                    "comment_char": "#",
+                    "enabled": True
                 },
                 "python": {
                     "key": self._read_legacy_shortcut("python", "F10"),
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
-                    "comment_char": "#"
+                    "comment_char": "#",
+                    "enabled": True
                 },
                 "creation": {
                     "key": self._read_legacy_shortcut("creation", "F11"),
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
-                    "comment_char": "#"
+                    "comment_char": "#",
+                    "enabled": True
                 }
             }
         }
@@ -222,10 +226,12 @@ class GTrayDataManager:
                 sc["extract_blocks"] = False
             if "comment_char" not in sc:
                 sc["comment_char"] = "#"
+            if "enabled" not in sc:
+                sc["enabled"] = True
         return sc
 
     def set_shortcut(self, name: str, key: str, model: str, system_prompt: str = "",
-                     extract_blocks: bool = False, comment_char: str = "#"):
+                     extract_blocks: bool = False, comment_char: str = "#", enabled: bool = True):
         name = name.strip()
         key = key.strip()
         model = model.strip()
@@ -242,7 +248,8 @@ class GTrayDataManager:
             "model": model,
             "system_prompt": system_prompt,
             "extract_blocks": bool(extract_blocks),
-            "comment_char": comment_char
+            "comment_char": comment_char,
+            "enabled": bool(enabled)
         }
         self.save()
 
@@ -261,6 +268,7 @@ class GTrayDataManager:
         system_prompt = sc.get("system_prompt", "")
         extract_blocks = sc.get("extract_blocks", False)
         comment_char = sc.get("comment_char", "#")
+        enabled = sc.get("enabled", True)
         
         provider_name = self.get_model_provider(model_name) or "openai"
         api_key = self.get_provider_key(provider_name) or ""
@@ -275,5 +283,6 @@ class GTrayDataManager:
             "base_url": base_url,
             "system_prompt": system_prompt,
             "extract_blocks": extract_blocks,
-            "comment_char": comment_char
+            "comment_char": comment_char,
+            "enabled": enabled
         }

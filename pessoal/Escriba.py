@@ -90,11 +90,14 @@ class registrador:
                     key = data.get("key", "(nenhuma)")
                     model = data.get("model", "")
                     details = []
+                    enabled = data.get("enabled", True)
+                    status_text = "Ativo" if enabled else "Inativo"
+                    details.append(f"Status: {status_text}")
                     if model:
                         details.append(f"Modelo: {model}")
                     if data.get("extract_blocks", False):
                         details.append("Extração de blocos: Ativa")
-                    extra_str = f" ({' | '.join(details)})" if details else ""
+                    extra_str = f" ({' | '.join(details)})"
                     self.logger.info(f"  • {name}: {key}{extra_str}")
                 else:
                     self.logger.info(f"  • {name}: {data}")

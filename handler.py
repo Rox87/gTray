@@ -140,7 +140,15 @@ class Gtray:
             shortcut = self.config.get_shortcut(shortcut_type)
             if shortcut_type == 'upgrade':
                 self.shortcut = shortcut
-            keyboard.add_hotkey(shortcut.lower(), handlers[shortcut_type])
+
+            is_enabled = True
+            if hasattr(self, 'data_manager') and self.data_manager:
+                sc_info = self.data_manager.get_shortcut(shortcut_type)
+                if sc_info and not sc_info.get("enabled", True):
+                    is_enabled = False
+
+            if is_enabled and shortcut:
+                keyboard.add_hotkey(shortcut.lower(), handlers[shortcut_type])
             
     def stop(self):
         self._is_running = False

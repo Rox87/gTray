@@ -223,5 +223,22 @@ class TestSystemPromptIntegration(unittest.TestCase):
         )
         self.assertEqual(res.strip(), expected.strip())
 
+    @patch('handler.keyboard.add_hotkey')
+    @patch('handler.keyboard.remove_hotkey')
+    @patch('handler.Image.open')
+    @patch('handler.pystray.Icon')
+    def test_register_shortcuts_respects_enabled_flag(self, mock_icon, mock_img, mock_rm, mock_add):
+        gtray = Gtray(logger_from=MagicMock())
+        gtray.config = MagicMock()
+        gtray.config.get_shortcut.side_effect = lambda sc: 'F8' if sc == 'upgrade' else ('F9' if sc == 'generic' else '')
+        gtray.data_manager = MagicMock()
+        gtray.data_manager.get_shortcut.side_effect = lambda sc: {'enabled': True} if sc == 'upgrade' else {'enabled': False}
+
+        gtray.register_shortcuts()
+
+        added_hotkeys = [call[0][0] for call in mock_add.call_args_list]
+        self.assertIn('f8', added_hotkeys)
+        self.assertNotIn('f9', added_hotkeys)
+
 if __name__ == '__main__':
     unittest.main()

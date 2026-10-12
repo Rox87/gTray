@@ -65,8 +65,9 @@ class TestGTrayDataManager(unittest.TestCase):
         self.assertEqual(shortcut['system_prompt'], 'Instrução de teste')
         self.assertTrue(shortcut['extract_blocks'])
         self.assertEqual(shortcut['comment_char'], '//')
+        self.assertTrue(shortcut['enabled'])
 
-        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave -> Base URL -> System Prompt -> Extração
+        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave -> Base URL -> System Prompt -> Extração -> Ativo
         chain = self.manager.resolve_shortcut('upgrade')
         self.assertEqual(chain['shortcut_name'], 'upgrade')
         self.assertEqual(chain['key'], 'Ctrl+Shift+U')
@@ -76,6 +77,17 @@ class TestGTrayDataManager(unittest.TestCase):
         self.assertEqual(chain['system_prompt'], 'Instrução de teste')
         self.assertTrue(chain['extract_blocks'])
         self.assertEqual(chain['comment_char'], '//')
+        self.assertTrue(chain['enabled'])
+
+        # Teste de atalho desativado (enabled=False)
+        self.manager.set_shortcut(
+            'disabled_sc', 'Ctrl+Shift+D', 'claude-3-5-sonnet',
+            enabled=False
+        )
+        sc_disabled = self.manager.get_shortcut('disabled_sc')
+        self.assertFalse(sc_disabled['enabled'])
+        chain_disabled = self.manager.resolve_shortcut('disabled_sc')
+        self.assertFalse(chain_disabled['enabled'])
 
     def test_provider_base_url_auto_and_custom(self):
         # Provedor conhecido automático (ex: deepseek)
