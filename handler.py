@@ -6,6 +6,7 @@ from pessoal.Decorador import tempo_decorrido
 from pessoal.IA import IA
 from pessoal.Engineer import Engineer
 from pessoal.config_manager import ConfigManager
+from gtray_data_manager import GTrayDataManager
 import subprocess
 import configparser
 config = configparser.ConfigParser()
@@ -39,6 +40,7 @@ class Gtray:
         global logger
         logger = logger_from
         self.config = ConfigManager()
+        self.data_manager = GTrayDataManager()
         self.Engineer = Engineer(logger_from)
         self.AI = None
         self.UI = UI
@@ -118,10 +120,16 @@ class Gtray:
             if not clipboard:
                 return
             logger.info('perguntando a inteligência artificial')
+            resolved = self.data_manager.resolve_shortcut(mode)
+            api_key = resolved.get('api_key')
+            model_name = resolved.get('model_name')
+            if api_key and self.AI:
+                self.AI.change_key(api_key)
+
             if mode == 'python':
-                response = self.AI.python_responder(clipboard)
+                response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name)
             else:
-                response = self.AI.responder(clipboard, prompt_modifier)
+                response = self.AI.responder(clipboard, prompt_modifier, mode=mode, model_override=model_name)
             logger.info('entregando resposta')
             self.Engineer.pos_processamento(clipboard, response)
         except Exception as ex:
@@ -131,10 +139,10 @@ class Gtray:
         self.handle_ai_request('python')
     @tempo_decorrido
     def chat_handler(self):
-        self.handle_ai_request('chat')
+        self.handle_ai_request('generic')
     @tempo_decorrido
     def sem_rodeios_upgrade(self):
-        self.handle_ai_request('chat', "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada")
+        self.handle_ai_request('upgrade', "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada")
     @tempo_decorrido
     def creation(self):
         try:

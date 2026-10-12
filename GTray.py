@@ -1,9 +1,14 @@
-
-from PyQt5.QtWidgets import QDesktopWidget,QCheckBox,QLineEdit,QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QMessageBox, QComboBox
+from PyQt5.QtWidgets import (
+    QDesktopWidget, QCheckBox, QLineEdit, QApplication, QWidget,
+    QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
+    QComboBox, QFrame, QTabWidget
+)
 from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QPixmap,QDesktopServices,QIcon
+from PyQt5.QtGui import QPixmap, QDesktopServices, QIcon
 from services.klisten import KListen
 from handler import Gtray
+from ui_theme import get_theme_stylesheet, get_status_badge_style
+from gtray_data_manager import GTrayDataManager
 import configparser
 from pessoal.Escriba import registrador
 import os
@@ -16,11 +21,10 @@ load_dotenv()
 r = registrador()
 r.addHand()
 logger = r.get_logger()
+
 # Create a new config parser object
 config = configparser.ConfigParser()
-
-# Read in the configuration file
-config.read('assets/config.ini',encoding='utf-8')
+config.read('assets/config.ini', encoding='utf-8')
 
 
 class GTray_CFG_UI(QWidget):
@@ -35,172 +39,658 @@ class GTray_CFG_UI(QWidget):
         self.fake_event = None
         self.lbl_shortcut_text = None
         self.button_get_shortcut_clicked = False
-        self.index=0
+        self.index = 0
+        self.current_theme = config.get('GTRAY', 'tema', fallback='dark')
+        self.data_manager = GTrayDataManager()
+
         self.initUI()
+
     def pos_left(self):
-            qr = self.frameGeometry()
-            cp = QDesktopWidget().availableGeometry().topLeft()
-            qr.moveCenter(cp)
-            self.move(qr.center())
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
     def initUI(self):
-        self.header_title = QLabel(config['GTRAY']['header_title'])
-        self.header_title.setStyleSheet('''font-size: 48px;background-color:purple''')
+        self.setWindowTitle('gTray')
+        self.setFixedSize(400, 600)
 
-        self.image = QLabel()
-        self.pixmap = QPixmap(config['GTRAY']['favicon'])
-        self.pixmap = self.pixmap.scaled(300, 300)
-        self.image.setPixmap(self.pixmap)
-        self.image.mousePressEvent = self.input_blockunblock
-        self.header_apikey = QLabel(config['GTRAY']['header_apikey_text'])
-        self.header_apikey.setStyleSheet('''color:white; font-size: 25px;background-color:#191970;''')
-        self.input_apikey = QLineEdit()
-        self.input_apikey_state = config['GTRAY']['input_apikey_state']
+        # Layout Principal
+        self.root_layout = QVBoxLayout()
+        self.root_layout.setContentsMargins(18, 18, 18, 18)
+        self.root_layout.setSpacing(12)
 
-        self.btn_apikey = QPushButton(config['GTRAY']['btn_apikey_block_text'])
-    
-    
-        self.input_blockunblock(self.fake_event)
-        self.lbl_shortcut = QLabel()
-        self.header_shortcut = QLabel(config['GTRAY']['header_shortcut_text'])
-        self.btn_shortcut = QPushButton(config['GTRAY']['btn_shortcut_text'])
-        self.btn_shortcut.clicked.connect(self.get_listen_dialog)
-        self.header_shortcut.setStyleSheet('''color:white; font-size: 25px;background-color:#191970;''')
-        self.lbl_shortcut.setStyleSheet('''color:black;font-size: 20px; background-color:lightgrey;''')
-        
-        # Add ComboBox for shortcut types
-        self.shortcut_type_combo = QComboBox()
-        self.shortcut_type_combo.addItems(['generic', 'upgrade', 'python' , 'creation'])
-        self.shortcut_type_combo.setCurrentText('upgrade')  # Default to 'melhore' for backward compatibility
-        self.shortcut_type_combo.currentTextChanged.connect(self.on_shortcut_type_changed)
-        self.current_shortcut_type = 'upgrade'  # Initialize with default value
-        self.setStyleSheet("""
-        background-color: #2B5DD1;
-        color: #FFFFFF;
-        border-style: outset;
-        padding: 2px;
-        font: bold 20px;
-        border-width: 6px;
-        border-radius: 25px;
-        border-color: #2752B8;
-        width:200px;
-        }
-        QPushButton {
-        border-radius: 5px;
-        border: 1px solid #000;
-        padding: 10px 20px;
-        background: darkred;
+        # ---------------------------------------------------------
+        # 1. CABEÇALHO (Header)
+        # ---------------------------------------------------------
+        header_frame = QFrame()
+        header_layout = QHBoxLayout(header_frame)
+        header_layout.setContentsMargins(0, 0, 0, 4)
+        header_layout.setSpacing(10)
 
-        font-size: 2em;
-        }
-        QPushButton:hover {
-            color:white;
-            background-color: #D2691E;
-                    }
-                """)
-        self.checkbox_visibility = QCheckBox("Visível")
+        # Ícone do Logo
+        self.logo_label = QLabel()
+        if os.path.isfile(config['GTRAY']['favicon']):
+            pix = QPixmap(config['GTRAY']['favicon']).scaled(
+                30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+            self.logo_label.setPixmap(pix)
+        else:
+            self.logo_label.setText("G")
+        self.logo_label.setFixedSize(32, 32)
+        self.logo_label.setAlignment(Qt.AlignCenter)
+
+        # Título e Subtítulo
+        title_box = QVBoxLayout()
+        title_box.setSpacing(1)
+        self.header_title = QLabel(config['GTRAY'].get('header_title', 'gTray'))
+        self.header_title.setProperty('class', 'headerTitle')
+        self.header_subtitle = QLabel("Assistente IA de Bandeja")
+        self.header_subtitle.setProperty('class', 'headerSubtitle')
+        title_box.addWidget(self.header_title)
+        title_box.addWidget(self.header_subtitle)
+
+        # Status & Toggle de Tema
+        header_controls = QHBoxLayout()
+        header_controls.setSpacing(8)
+
+        self.lbl_status = QLabel("● Pausado")
+        self.lbl_status.setAlignment(Qt.AlignCenter)
+
+        self.btn_theme_toggle = QPushButton("☀️" if self.current_theme == 'dark' else "🌙")
+        self.btn_theme_toggle.setProperty('class', 'iconBtn')
+        self.btn_theme_toggle.setFixedSize(32, 32)
+        self.btn_theme_toggle.setToolTip("Alternar Tema (Dark / Light)")
+        self.btn_theme_toggle.clicked.connect(self.toggle_theme)
+
+        header_controls.addWidget(self.lbl_status)
+        header_controls.addWidget(self.btn_theme_toggle)
+
+        header_layout.addWidget(self.logo_label)
+        header_layout.addLayout(title_box, stretch=1)
+        header_layout.addLayout(header_controls)
+        self.root_layout.addWidget(header_frame)
+
+        # ---------------------------------------------------------
+        # 2. ABAS DE CONFIGURAÇÃO (QTabWidget)
+        # ---------------------------------------------------------
+        self.tabs = QTabWidget()
+
+        # Tab 1: Atalhos (nome, tecla, modelo)
+        self.tab_shortcuts = QWidget()
+        self.setup_shortcuts_tab()
+        self.tabs.addTab(self.tab_shortcuts, "⚡ Atalhos")
+
+        # Tab 2: Modelos (nome, provedor)
+        self.tab_models = QWidget()
+        self.setup_models_tab()
+        self.tabs.addTab(self.tab_models, "🤖 Modelos")
+
+        # Tab 3: Provedores (nome, chave)
+        self.tab_providers = QWidget()
+        self.setup_providers_tab()
+        self.tabs.addTab(self.tab_providers, "🔑 Provedores")
+
+        self.root_layout.addWidget(self.tabs, stretch=1)
+
+        # ---------------------------------------------------------
+        # 3. PREFERÊNCIAS & CONTROLES NO RODAPÉ
+        # ---------------------------------------------------------
+        prefs_layout = QHBoxLayout()
+        self.checkbox_visibility = QCheckBox("Manter Visível")
         self.checkbox_visibility.setChecked(True)
         self.checkbox_visibility.stateChanged.connect(self.checkbox_visibility_changed)
+        prefs_layout.addWidget(self.checkbox_visibility)
+        prefs_layout.addStretch(1)
+        self.root_layout.addLayout(prefs_layout)
 
-        self.header_startstop = QLabel(config['GTRAY']['header_startstop_text'])
-        self.header_startstop.setStyleSheet('''color:white; font-size: 25px;background-color:#191970;''')
-        self.btn_startstop = QPushButton(config['GTRAY']['btn_startstop_text'])
-        self.btn_startstop.setStyleSheet('''QPushButton {
-            color:white; background-color:green;
-            }
-                QPushButton:hover {
-        color:white;
-        background-color: darkgreen;
-                }
-            ''')
+        footer_layout = QHBoxLayout()
+        footer_layout.setSpacing(8)
+
+        self.btn_startstop = QPushButton("Iniciar Serviço")
+        self.btn_startstop.setProperty('class', 'primary')
+        self.btn_startstop.setFixedHeight(38)
         self.btn_startstop.clicked.connect(self.startstop)
 
-        self.get_shortcut()
+        self.btn_minimize = QPushButton("Minimizar")
+        self.btn_minimize.setFixedHeight(38)
+        self.btn_minimize.clicked.connect(self.hide_UI)
 
-        # Adiciona o QLabel ao layout
-        self.vbox = QVBoxLayout()
-        self.vbox.addWidget(self.header_title)
-        self.vbox.addWidget(self.image)
-        self.vbox.addWidget(self.header_apikey)
-        self.vbox.addWidget(self.input_apikey)
-        self.vbox.addWidget(self.btn_apikey)
-        self.vbox.addWidget(self.header_shortcut)
-        self.vbox.addWidget(self.shortcut_type_combo)  # Add the ComboBox to the layout
-        self.vbox.addWidget(self.lbl_shortcut)
-        self.vbox.addWidget(self.btn_shortcut)  
-        self.vbox.addWidget(self.header_startstop)
-        self.vbox.addWidget(self.checkbox_visibility)
-        self.vbox.addWidget(self.btn_startstop)
+        footer_layout.addWidget(self.btn_startstop, stretch=2)
+        footer_layout.addWidget(self.btn_minimize, stretch=1)
+        self.root_layout.addLayout(footer_layout)
 
-        self.image.setAlignment(Qt.AlignCenter)
-        self.header_title.setAlignment(Qt.AlignCenter)
-        self.header_apikey.setAlignment(Qt.AlignCenter)
-        self.input_apikey.setAlignment(Qt.AlignCenter)
-        self.lbl_shortcut.setAlignment(Qt.AlignCenter)
-        self.header_shortcut.setAlignment(Qt.AlignCenter)
-        self.header_startstop.setAlignment(Qt.AlignCenter)
-        self.setLayout(self.vbox)
-        
-        
-        self.setGeometry(400, 400, 400, 200)
-        self.setWindowTitle('GTray')
-        self.setWindowOpacity(0.9)
-           
-        self.setWindowIcon(QIcon(config['GTRAY']['favicon']))
+        self.setLayout(self.root_layout)
+
+        # Inicialização do Tema e dados
+        self.set_theme(self.current_theme, save_to_file=False)
+        self.load_all_data()
+        self.start_buttons_def()
+
+        if os.path.isfile(config['GTRAY']['favicon']):
+            self.setWindowIcon(QIcon(config['GTRAY']['favicon']))
+
         self.pos_left()
         self.show()
+
+    # -------------------------------------------------------------
+    # SETUP: ABA ATALHOS (Nome, Tecla e Modelo)
+    # -------------------------------------------------------------
+    def setup_shortcuts_tab(self):
+        layout = QVBoxLayout(self.tab_shortcuts)
+        layout.setSpacing(10)
+        layout.setContentsMargins(12, 12, 12, 12)
+
+        # Seletor do Atalho + Novo
+        sel_row = QHBoxLayout()
+        lbl_sel = QLabel("Atalho:")
+        lbl_sel.setProperty('class', 'sectionHeader')
+        self.combo_shortcuts = QComboBox()
+        self.combo_shortcuts.currentTextChanged.connect(self.on_shortcut_selected)
+
+        self.btn_new_shortcut = QPushButton("+ Novo")
+        self.btn_new_shortcut.clicked.connect(self.new_shortcut)
+
+        sel_row.addWidget(lbl_sel)
+        sel_row.addWidget(self.combo_shortcuts, stretch=1)
+        sel_row.addWidget(self.btn_new_shortcut)
+        layout.addLayout(sel_row)
+
+        # Nome do Atalho
+        name_box = QVBoxLayout()
+        name_box.setSpacing(2)
+        lbl_name = QLabel("Nome do Atalho:")
+        lbl_name.setProperty('class', 'headerSubtitle')
+        self.input_shortcut_name = QLineEdit()
+        name_box.addWidget(lbl_name)
+        name_box.addWidget(self.input_shortcut_name)
+        layout.addLayout(name_box)
+
+        # Tecla de Atalho
+        key_box = QVBoxLayout()
+        key_box.setSpacing(2)
+        lbl_key = QLabel("Tecla / Combinação:")
+        lbl_key.setProperty('class', 'headerSubtitle')
+        key_box.addWidget(lbl_key)
+
+        key_row = QHBoxLayout()
+        self.lbl_shortcut_key = QLabel("(nenhuma)")
+        self.lbl_shortcut_key.setProperty('class', 'badgeDisplay')
+        self.lbl_shortcut_key.setAlignment(Qt.AlignCenter)
+
+        self.btn_listen_key = QPushButton("Gravar Tecla")
+        self.btn_listen_key.clicked.connect(self.listen_shortcut_key)
+
+        key_row.addWidget(self.lbl_shortcut_key, stretch=1)
+        key_row.addWidget(self.btn_listen_key)
+        key_box.addLayout(key_row)
+        layout.addLayout(key_box)
+
+        # Modelo Associado
+        model_box = QVBoxLayout()
+        model_box.setSpacing(2)
+        lbl_model = QLabel("Modelo de IA Associado:")
+        lbl_model.setProperty('class', 'headerSubtitle')
+        self.combo_shortcut_model = QComboBox()
+        model_box.addWidget(lbl_model)
+        model_box.addWidget(self.combo_shortcut_model)
+        layout.addLayout(model_box)
+
+        # Botões de Ação
+        btn_row = QHBoxLayout()
+        self.btn_save_shortcut = QPushButton("Salvar Atalho")
+        self.btn_save_shortcut.setProperty('class', 'primary')
+        self.btn_save_shortcut.clicked.connect(self.save_shortcut)
+
+        self.btn_del_shortcut = QPushButton("Excluir")
+        self.btn_del_shortcut.setProperty('class', 'danger')
+        self.btn_del_shortcut.clicked.connect(self.delete_shortcut)
+
+        btn_row.addWidget(self.btn_save_shortcut, stretch=2)
+        btn_row.addWidget(self.btn_del_shortcut, stretch=1)
+        layout.addLayout(btn_row)
+
+        layout.addStretch(1)
+
+        # Aliases para retrocompatibilidade
+        self.shortcut_type_combo = self.combo_shortcuts
+        self.lbl_shortcut = self.lbl_shortcut_key
+        self.btn_shortcut = self.btn_listen_key
+
+    # -------------------------------------------------------------
+    # SETUP: ABA MODELOS (Nome e Provedor)
+    # -------------------------------------------------------------
+    def setup_models_tab(self):
+        layout = QVBoxLayout(self.tab_models)
+        layout.setSpacing(10)
+        layout.setContentsMargins(12, 12, 12, 12)
+
+        # Seletor de Modelo + Novo
+        sel_row = QHBoxLayout()
+        lbl_sel = QLabel("Modelo:")
+        lbl_sel.setProperty('class', 'sectionHeader')
+        self.combo_models = QComboBox()
+        self.combo_models.currentTextChanged.connect(self.on_model_selected)
+
+        self.btn_new_model = QPushButton("+ Novo")
+        self.btn_new_model.clicked.connect(self.new_model)
+
+        sel_row.addWidget(lbl_sel)
+        sel_row.addWidget(self.combo_models, stretch=1)
+        sel_row.addWidget(self.btn_new_model)
+        layout.addLayout(sel_row)
+
+        # Nome do Modelo
+        name_box = QVBoxLayout()
+        name_box.setSpacing(2)
+        lbl_name = QLabel("Nome do Modelo:")
+        lbl_name.setProperty('class', 'headerSubtitle')
+        self.input_model_name = QLineEdit()
+        self.input_model_name.setPlaceholderText("ex: gpt-4o-mini, claude-3-5-sonnet")
+        name_box.addWidget(lbl_name)
+        name_box.addWidget(self.input_model_name)
+        layout.addLayout(name_box)
+
+        # Provedor do Modelo
+        prov_box = QVBoxLayout()
+        prov_box.setSpacing(2)
+        lbl_prov = QLabel("Provedor Associado:")
+        lbl_prov.setProperty('class', 'headerSubtitle')
+        self.combo_model_provider = QComboBox()
+        prov_box.addWidget(lbl_prov)
+        prov_box.addWidget(self.combo_model_provider)
+        layout.addLayout(prov_box)
+
+        # Botões de Ação
+        btn_row = QHBoxLayout()
+        self.btn_save_model = QPushButton("Salvar Modelo")
+        self.btn_save_model.setProperty('class', 'primary')
+        self.btn_save_model.clicked.connect(self.save_model)
+
+        self.btn_del_model = QPushButton("Excluir")
+        self.btn_del_model.setProperty('class', 'danger')
+        self.btn_del_model.clicked.connect(self.delete_model)
+
+        btn_row.addWidget(self.btn_save_model, stretch=2)
+        btn_row.addWidget(self.btn_del_model, stretch=1)
+        layout.addLayout(btn_row)
+
+        layout.addStretch(1)
+
+        # Aliases para retrocompatibilidade
+        self.input_model = self.input_model_name
+
+    # -------------------------------------------------------------
+    # SETUP: ABA PROVEDORES (Nome e Chave)
+    # -------------------------------------------------------------
+    def setup_providers_tab(self):
+        layout = QVBoxLayout(self.tab_providers)
+        layout.setSpacing(10)
+        layout.setContentsMargins(12, 12, 12, 12)
+
+        # Seletor de Provedor + Novo
+        sel_row = QHBoxLayout()
+        lbl_sel = QLabel("Provedor:")
+        lbl_sel.setProperty('class', 'sectionHeader')
+        self.combo_providers = QComboBox()
+        self.combo_providers.currentTextChanged.connect(self.on_provider_selected)
+
+        self.btn_new_provider = QPushButton("+ Novo")
+        self.btn_new_provider.clicked.connect(self.new_provider)
+
+        sel_row.addWidget(lbl_sel)
+        sel_row.addWidget(self.combo_providers, stretch=1)
+        sel_row.addWidget(self.btn_new_provider)
+        layout.addLayout(sel_row)
+
+        # Nome do Provedor
+        name_box = QVBoxLayout()
+        name_box.setSpacing(2)
+        lbl_name = QLabel("Nome do Provedor:")
+        lbl_name.setProperty('class', 'headerSubtitle')
+        self.input_provider_name = QLineEdit()
+        self.input_provider_name.setPlaceholderText("ex: openai, anthropic, groq")
+        name_box.addWidget(lbl_name)
+        name_box.addWidget(self.input_provider_name)
+        layout.addLayout(name_box)
+
+        # Chave da API
+        key_box = QVBoxLayout()
+        key_box.setSpacing(2)
+        lbl_key = QLabel("Chave de API:")
+        lbl_key.setProperty('class', 'headerSubtitle')
+        key_box.addWidget(lbl_key)
+
+        key_row = QHBoxLayout()
+        self.input_provider_key = QLineEdit()
+        self.input_provider_key.setEchoMode(QLineEdit.Password)
+        self.input_provider_key.setPlaceholderText("sk-...")
+
+        self.btn_show_provider_key = QPushButton("👁")
+        self.btn_show_provider_key.setProperty('class', 'iconBtn')
+        self.btn_show_provider_key.setFixedSize(32, 32)
+        self.btn_show_provider_key.setToolTip("Visualizar / Ocultar Chave")
+        self.btn_show_provider_key.clicked.connect(self.toggle_apikey_visibility)
+
+        key_row.addWidget(self.input_provider_key, stretch=1)
+        key_row.addWidget(self.btn_show_provider_key)
+        key_box.addLayout(key_row)
+        layout.addLayout(key_box)
+
+        # Botões de Ação
+        btn_row = QHBoxLayout()
+        self.btn_save_provider = QPushButton("Salvar Provedor")
+        self.btn_save_provider.setProperty('class', 'primary')
+        self.btn_save_provider.clicked.connect(self.save_provider)
+
+        self.btn_del_provider = QPushButton("Excluir")
+        self.btn_del_provider.setProperty('class', 'danger')
+        self.btn_del_provider.clicked.connect(self.delete_provider)
+
+        btn_row.addWidget(self.btn_save_provider, stretch=2)
+        btn_row.addWidget(self.btn_del_provider, stretch=1)
+        layout.addLayout(btn_row)
+
+        layout.addStretch(1)
+
+        # Aliases para retrocompatibilidade
+        self.input_apikey = self.input_provider_key
+        self.input_provider = self.input_provider_name
+
+    # -------------------------------------------------------------
+    # CARREGAMENTO E SINCRONIZAÇÃO DE DADOS
+    # -------------------------------------------------------------
+    def load_all_data(self):
+        self.refresh_providers_dropdown()
+        self.refresh_models_dropdown()
+        self.refresh_shortcuts_dropdown()
+
+    def refresh_providers_dropdown(self):
+        providers = list(self.data_manager.get_providers().keys())
+        current = self.combo_providers.currentText()
+        self.combo_providers.blockSignals(True)
+        self.combo_providers.clear()
+        self.combo_providers.addItems(providers)
+        self.combo_model_provider.blockSignals(True)
+        self.combo_model_provider.clear()
+        self.combo_model_provider.addItems(providers)
+        self.combo_providers.blockSignals(False)
+        self.combo_model_provider.blockSignals(False)
+
+        if current in providers:
+            self.combo_providers.setCurrentText(current)
+        elif providers:
+            self.combo_providers.setCurrentIndex(0)
+        self.on_provider_selected(self.combo_providers.currentText())
+
+    def refresh_models_dropdown(self):
+        models = list(self.data_manager.get_models().keys())
+        current = self.combo_models.currentText()
+        self.combo_models.blockSignals(True)
+        self.combo_models.clear()
+        self.combo_models.addItems(models)
+        self.combo_shortcut_model.blockSignals(True)
+        self.combo_shortcut_model.clear()
+        self.combo_shortcut_model.addItems(models)
+        self.combo_models.blockSignals(False)
+        self.combo_shortcut_model.blockSignals(False)
+
+        if current in models:
+            self.combo_models.setCurrentText(current)
+        elif models:
+            self.combo_models.setCurrentIndex(0)
+        self.on_model_selected(self.combo_models.currentText())
+
+    def refresh_shortcuts_dropdown(self):
+        shortcuts = list(self.data_manager.get_shortcuts().keys())
+        current = self.combo_shortcuts.currentText()
+        self.combo_shortcuts.blockSignals(True)
+        self.combo_shortcuts.clear()
+        self.combo_shortcuts.addItems(shortcuts)
+        self.combo_shortcuts.blockSignals(False)
+
+        if current in shortcuts:
+            self.combo_shortcuts.setCurrentText(current)
+        elif shortcuts:
+            self.combo_shortcuts.setCurrentIndex(0)
+        self.on_shortcut_selected(self.combo_shortcuts.currentText())
+
+    # Handlers da Aba Provedores
+    def on_provider_selected(self, name):
+        if not name:
+            self.input_provider_name.clear()
+            self.input_provider_key.clear()
+            return
+        key = self.data_manager.get_provider_key(name) or ""
+        self.input_provider_name.setText(name)
+        self.input_provider_key.setText(key)
+
+    def new_provider(self):
+        self.input_provider_name.clear()
+        self.input_provider_key.clear()
+        self.input_provider_name.setFocus()
+
+    def save_provider(self, show_msg: bool = True):
+        name = self.input_provider_name.text().strip()
+        key = self.input_provider_key.text().strip()
+        if not name:
+            if show_msg:
+                QMessageBox.warning(self, "Aviso", "O nome do provedor não pode ser vazio.")
+            return
+        self.data_manager.set_provider(name, key)
+        self.refresh_providers_dropdown()
+        self.combo_providers.setCurrentText(name)
+        if show_msg:
+            QMessageBox.information(self, "Sucesso", f"Provedor '{name}' salvo com sucesso!")
+
+    def delete_provider(self):
+        name = self.input_provider_name.text().strip()
+        if not name:
+            return
+        confirm = QMessageBox.question(
+            self, "Confirmar", f"Deseja excluir o provedor '{name}'?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            self.data_manager.delete_provider(name)
+            self.refresh_providers_dropdown()
+
+    # Handlers da Aba Modelos
+    def on_model_selected(self, name):
+        if not name:
+            self.input_model_name.clear()
+            return
+        provider = self.data_manager.get_model_provider(name) or ""
+        self.input_model_name.setText(name)
+        if provider:
+            self.combo_model_provider.setCurrentText(provider)
+
+    def new_model(self):
+        self.input_model_name.clear()
+        self.input_model_name.setFocus()
+
+    def save_model(self, show_msg: bool = True):
+        name = self.input_model_name.text().strip()
+        provider = self.combo_model_provider.currentText().strip()
+        if not name:
+            if show_msg:
+                QMessageBox.warning(self, "Aviso", "O nome do modelo não pode ser vazio.")
+            return
+        if not provider:
+            if show_msg:
+                QMessageBox.warning(self, "Aviso", "Cadastre e selecione um provedor primeiro.")
+            return
+        self.data_manager.set_model(name, provider)
+        self.refresh_models_dropdown()
+        self.combo_models.setCurrentText(name)
+        if show_msg:
+            QMessageBox.information(self, "Sucesso", f"Modelo '{name}' salvo com sucesso!")
+
+    def delete_model(self):
+        name = self.input_model_name.text().strip()
+        if not name:
+            return
+        confirm = QMessageBox.question(
+            self, "Confirmar", f"Deseja excluir o modelo '{name}'?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            self.data_manager.delete_model(name)
+            self.refresh_models_dropdown()
+
+    # Handlers da Aba Atalhos
+    def on_shortcut_selected(self, name):
+        if not name:
+            self.input_shortcut_name.clear()
+            self.lbl_shortcut_key.setText("(nenhuma)")
+            return
+        sc = self.data_manager.get_shortcut(name) or {}
+        key = sc.get("key", "")
+        model = sc.get("model", "")
+
+        self.input_shortcut_name.setText(name)
+        self.lbl_shortcut_key.setText(key if key else "(nenhuma)")
+        if model:
+            self.combo_shortcut_model.setCurrentText(model)
+
+    def new_shortcut(self):
+        self.input_shortcut_name.clear()
+        self.lbl_shortcut_key.setText("(nenhuma)")
+        self.input_shortcut_name.setFocus()
+
+    def save_shortcut(self, show_msg: bool = True):
+        name = self.input_shortcut_name.text().strip()
+        key = self.lbl_shortcut_key.text().strip()
+        if key == "(nenhuma)":
+            key = ""
+        model = self.combo_shortcut_model.currentText().strip()
+        if not name:
+            if show_msg:
+                QMessageBox.warning(self, "Aviso", "O nome do atalho não pode ser vazio.")
+            return
+        self.data_manager.set_shortcut(name, key, model)
+        self.refresh_shortcuts_dropdown()
+        self.combo_shortcuts.setCurrentText(name)
+        if show_msg:
+            QMessageBox.information(self, "Sucesso", f"Atalho '{name}' salvo com sucesso!")
+
+    def delete_shortcut(self):
+        name = self.input_shortcut_name.text().strip()
+        if not name:
+            return
+        confirm = QMessageBox.question(
+            self, "Confirmar", f"Deseja excluir o atalho '{name}'?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if confirm == QMessageBox.Yes:
+            self.data_manager.delete_shortcut(name)
+            self.refresh_shortcuts_dropdown()
+
+    def listen_shortcut_key(self):
+        name = self.input_shortcut_name.text().strip() or "upgrade"
+        self.button_get_shortcut_clicked = True
+        self.lbl_shortcut_key.setText(config['GTRAY'].get('lbl_shortcut_state_rec', 'Pressione teclas...'))
+        QApplication.processEvents()
+
+        if hasattr(self.kl, 'kl'):
+            self.kl.__init__(combo=name)
+        else:
+            self.kl = KListen(combo=name)
+        self.kl.run()
+        self.kl.set_activated(False)
+
+        # Lê tecla capturada
+        sc_file = os.path.join('assets', f'shortcut_{name}.cfg')
+        captured_key = ""
+        if os.path.isfile(sc_file):
+            try:
+                with open(sc_file, 'r', encoding='utf-8') as f:
+                    captured_key = f.read().strip()
+            except Exception:
+                pass
+
+        if captured_key:
+            self.lbl_shortcut_key.setText(captured_key)
+            model = self.combo_shortcut_model.currentText().strip()
+            self.data_manager.set_shortcut(name, captured_key, model)
+        else:
+            self.lbl_shortcut_key.setText("(nenhuma)")
+
+    # -------------------------------------------------------------
+    # GERENCIAMENTO DE TEMA E STATUS
+    # -------------------------------------------------------------
+    def set_theme(self, theme_name: str, save_to_file: bool = True):
+        self.current_theme = theme_name
+        self.setStyleSheet(get_theme_stylesheet(self.current_theme))
+        self.btn_theme_toggle.setText("☀️" if self.current_theme == 'dark' else "🌙")
+        self.update_status_badge()
+
+        if save_to_file:
+            try:
+                config.set('GTRAY', 'tema', self.current_theme)
+                with open('assets/config.ini', 'w', encoding='utf-8') as f:
+                    config.write(f)
+            except Exception as e:
+                logger.error(f"Erro ao salvar tema: {e}")
+
+    def toggle_theme(self):
+        new_theme = 'light' if self.current_theme == 'dark' else 'dark'
+        self.set_theme(new_theme, save_to_file=True)
+
+    def update_status_badge(self):
+        is_running = (self.autostart is False and self.gt is not None)
+        if is_running:
+            self.lbl_status.setText("● Ativo")
+            self.lbl_status.setStyleSheet(get_status_badge_style(True, self.current_theme))
+        else:
+            self.lbl_status.setText("● Pausado")
+            self.lbl_status.setStyleSheet(get_status_badge_style(False, self.current_theme))
+
+    def toggle_apikey_visibility(self):
+        if self.input_provider_key.echoMode() == QLineEdit.Password:
+            self.input_provider_key.setEchoMode(QLineEdit.Normal)
+        else:
+            self.input_provider_key.setEchoMode(QLineEdit.Password)
+
     def start_buttons_def(self):
-        self.btn_startstop.setText('Iniciar')
-        self.btn_startstop.setStyleSheet('''
-        QPushButton {
-        color:white; background-color:green;
-        }
-            QPushButton:hover {
-    color:white;
-    background-color: darkgreen;
-            }
-        ''')
-        
+        self.btn_startstop.setText('Iniciar Serviço')
+        self.btn_startstop.setProperty('class', 'primary')
+        self.btn_startstop.style().unpolish(self.btn_startstop)
+        self.btn_startstop.style().polish(self.btn_startstop)
+        self.update_status_badge()
+
     def stop_buttons_def(self):
-        self.btn_startstop.setText('Pausar')
-        self.btn_startstop.setStyleSheet('''
-        QPushButton {
-        color:white; background-color:darkred;
-        }
-            QPushButton:hover {
-    color:white;
-    background-color: #D2691E;
-            }
-        ''')
+        self.btn_startstop.setText('Pausar Serviço')
+        self.btn_startstop.setProperty('class', 'danger')
+        self.btn_startstop.style().unpolish(self.btn_startstop)
+        self.btn_startstop.style().polish(self.btn_startstop)
+        self.update_status_badge()
 
     def checkbox_visibility_changed(self, state):
-        if state != 2:  # Checkbox unchecked
+        if state != 2:
             self.visible = False
             self.start_buttons_def()
-        else:  # Checkbox checked
+        else:
             self.visible = True
-            self.show()  # Show the UI
+            self.show()
 
     def startstop(self):
-        if not hasattr(self.gt,'UI'):
-            self.gt = Gtray(self,logger)
+        if not hasattr(self.gt, 'UI'):
+            self.gt = Gtray(self, logger)
         file_path = config['GTRAY']['k']
         if not os.path.isfile(file_path):
-            # Crie o arquivo e escreva o conteúdo inicial
-            with open(file_path, 'w') as file:
+            with open(file_path, 'w', encoding='utf-8') as file:
                 file.write('')
-        with open(file_path, 'r') as f:
-            self.apikey = f.read()
-                
+        with open(file_path, 'r', encoding='utf-8') as f:
+            self.apikey = f.read().strip()
             self.gt.change_key(self.apikey)
 
-        # Update visibility based on checkbox state
         if self.checkbox_visibility.isChecked():
             self.show()
         else:
             self.hide()
 
-
-        if self.autostart == True:
+        if self.autostart is True:
             self.stop_buttons_def()
             self.gt.start()
             self.autostart = False
@@ -209,167 +699,64 @@ class GTray_CFG_UI(QWidget):
         else:
             self.start_buttons_def()
             self.gt.stop()
-            #self.gt.on_exit()
             del self.gt
             self.gt = None
             self.autostart = True
 
-
-        
-    def input_blockunblock(self,event=None):
-        if self.input_apikey_state != 'unblock':
-            self.btn_apikey.setText(config['GTRAY']['btn_apikey_block_text'])
-            self.btn_apikey.disconnect()
-            self.btn_apikey.clicked.connect(self.sobre_apikey)
-            self.input_apikey.setText(config['GTRAY']['input_apikey_bloqueado'])
-            self.input_apikey.setEnabled(False)
-            self.input_apikey.setStyleSheet('''color:black; font-size: 19px;background-color:lightgrey;''')
-            self.input_apikey_state = 'unblock'
-        else:
-            with open(config['GTRAY']['k'], 'r') as f:
-                self.apikey = f.read()
-            if self.gt == None:
-                self.gt = Gtray(self,logger)
-            self.gt.change_key(self.apikey)
-            self.btn_apikey.setText(config['GTRAY']['btn_apikey_text'])
-            try:
-                self.btn_apikey.disconnect()
-            except:
-                pass
-            self.btn_apikey.clicked.connect(self.write_k)
-            self.input_apikey.setText(self.apikey)
-            self.input_apikey.setEnabled(True)
-            self.input_apikey.setFocus()
-            self.input_apikey.setStyleSheet('''color:black; font-size: 25px;background-color:white;''')
-            self.input_apikey_state = 'block'
-
-    def write_k(self):
-        try:
-            with open(config['GTRAY']['k'],'w') as f:
-                f.write(self.input_apikey.text())
-            self.apikey = self.input_apikey.text()
-        except Exception as ex:
-            print(ex)
-        QMessageBox.information(self, config['GTRAY']['write_k_0'],config['GTRAY']['write_k_1'], QMessageBox.Ok)
-        self.input_apikey_state = 'block'
-        self.input_blockunblock()
-
-    def sobre_apikey(self):
-        
-        about = QMessageBox.question(self, config['GTRAY']['sobre_apikey_0'],config['GTRAY']['sobre_apikey_1'], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-        if about == QMessageBox.Yes:
-            url = QUrl('https://platform.openai.com/account/api-keys')
-            QDesktopServices.openUrl(url)
-        else:
-            pass
-        QMessageBox.information(self, config['GTRAY']['sobre_apikey_0'],config['GTRAY']['sobre_apikey_2'], QMessageBox.Ok)
-
-    def get_listen_dialog(self):
-        shortcut = QMessageBox.question(self, config['GTRAY']['sobre_shortcut_0'],config['GTRAY']['sobre_shortcut_1'], QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if shortcut == QMessageBox.Yes:
-            self.listen_shortcut()
-        else:
-            pass
-    def on_shortcut_type_changed(self, shortcut_type):
-        self.current_shortcut_type = shortcut_type
-        self.get_shortcut()
-
-    def get_shortcut(self):
-        try:
-            shortcut_file = f"assets/shortcut_{self.current_shortcut_type}.cfg"
-            with open(shortcut_file, 'r') as f:
-                self.shortcut = f.read()
-        except Exception as ex:
-            print(ex)
-        
-        # Single update for both labels
-        self.lbl_shortcut.setText(f"{self.shortcut}")
-        self.header_shortcut.setText(config['GTRAY']['header_shortcut_text'])
-        QApplication.processEvents()
-  
-
-    def listen_shortcut(self):
-        self.button_get_shortcut_clicked = True        
-        self.header_shortcut.setText(config['GTRAY']['header_shortcut_state_rec'])
-        self.header_shortcut.setStyleSheet('font-size=20px')
-        self.lbl_shortcut.setText(config['GTRAY']['lbl_shortcut_state_rec'])
-        # Single batch update for UI elements
-        QApplication.processEvents()
-        # Single call to handle shortcut
-        self.listen()
-        self.get_shortcut()
-        self.autostart = False
-
-    def listen(self):
-        if hasattr(self.kl, 'kl'):
-            self.kl.__init__()
-        else:
-            self.kl = KListen(combo=self.current_shortcut_type)
-        self.get_shortcut()
-
-        self.kl.run()
-        self.header_shortcut.setStyleSheet('''color:white; font-size: 25px;background-color:#191970;''')
-        self.kl.set_activated(False)
-        print('shortcut capturado')
-    
     def closeEvent(self, event):
-        self.gt.on_exit()
+        if self.gt is not None:
+            self.gt.on_exit()
         event.accept()
 
     def hide_UI(self):
-       print('app no plano de fundo')
-       self.hide()
-       #self.the_program_to_hide = win32gui.GetForegroundWindow()
-       #win32gui.ShowWindow(self.the_program_to_hide , win32con.SW_HIDE)
+        logger.info('app no plano de fundo')
+        self.hide()
 
     def show_UI(self):
-       print('app visivel')
-       self.show()
-       #self.the_program_to_hide = win32gui.GetForegroundWindow()
-       #win32gui.ShowWindow(self.the_program_to_hide , win32con.SW_HIDE)
+        logger.info('app visivel')
+        self.show()
+
     def cmd_start(self):
         self.startstop()
 
 
-
-
 if __name__ == '__main__':
-        pid = os.getpid()
-        # Abre (ou cria) um arquivo no modo de escrita ('w')
-        with open('cmd/lastpid.txt', 'r') as file:
-            pid2 = file.read()
-        CREATE_NO_WINDOW = 0x08000000
-        subprocess.call(f'taskkill /f /FI "PID eq {pid2}"', creationflags=CREATE_NO_WINDOW)
-        
-        with open('cmd/lastpid.txt', 'w') as file:
-            file.write(f'{pid}')
+    pid = os.getpid()
+    lastpid_path = 'cmd/lastpid.txt'
+    if os.path.exists(lastpid_path):
+        with open(lastpid_path, 'r', encoding='utf-8') as file:
+            pid2 = file.read().strip()
+        if pid2:
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.call(f'taskkill /f /FI "PID eq {pid2}"', creationflags=CREATE_NO_WINDOW)
 
-        app = QApplication(sys.argv)
-        ex = GTray_CFG_UI()
-        try:
-            if sys.argv[1] == "1": 
-                logger.info(f'main > {sys.argv[1]}')           
-                ex.visible=True
-                ex.autostart=True
-                ex.startstop()
-                sys.exit(app.exec_())
-            elif sys.argv[1] == "2":
-                logger.info(f'main > {sys.argv[1]}')
-                ex.visible=False
-                ex.autostart=True
-                ex.checkbox_visibility.setChecked(ex.visible)  # Uncheck the visibility checkbox
-                ex.hide()  # Explicitly hide the UI
-                ex.startstop()
-                ex.gt.run()
-            else:
-                raise Exception
-        except:
-                logger.info(f'main > UI')
-                ex.visible=True
-                ex.autostart=False
-                ex.startstop()
-                sys.exit(app.exec_())
-        sys.exit(0)
+    os.makedirs('cmd', exist_ok=True)
+    with open(lastpid_path, 'w', encoding='utf-8') as file:
+        file.write(f'{pid}')
 
-
+    app = QApplication(sys.argv)
+    ex = GTray_CFG_UI()
+    try:
+        if len(sys.argv) > 1 and sys.argv[1] == "1":
+            logger.info(f'main > {sys.argv[1]}')
+            ex.visible = True
+            ex.autostart = True
+            ex.startstop()
+            sys.exit(app.exec_())
+        elif len(sys.argv) > 1 and sys.argv[1] == "2":
+            logger.info(f'main > {sys.argv[1]}')
+            ex.visible = False
+            ex.autostart = True
+            ex.checkbox_visibility.setChecked(ex.visible)
+            ex.hide()
+            ex.startstop()
+            ex.gt.run()
+        else:
+            raise Exception
+    except Exception:
+        logger.info('main > UI')
+        ex.visible = True
+        ex.autostart = False
+        ex.startstop()
+        sys.exit(app.exec_())
+    sys.exit(0)

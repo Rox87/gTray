@@ -10,7 +10,10 @@ class IA:
         self.config = ConfigManager()
         openai.api_key = key
 
-    def python_responder(self, prompt):
+    def change_key(self, key):
+        openai.api_key = key
+
+    def python_responder(self, prompt, mode='python', model_override=None):
         import re
 
         def detectar_caminho_arquivo(texto):
@@ -28,9 +31,10 @@ class IA:
             except Exception as e:
                 logger.error(f"Error reading file {caminho}: {str(e)}")
 
+        target_model = model_override or self.config.get_model(mode)
         try:
             response = openai.chat.completions.create(
-                model=self.config.get_model(),
+                model=target_model,
                 messages=[{"role": "system", "content": "seja extremamente breve e retorne apenas o nome entre ** seguido do bloco código python para cada arquivo da solução a seguir: " + final_prompt}]
             )
             coms = response.choices[0].message.content
@@ -50,19 +54,20 @@ class IA:
             logger.error(f"Error in AI response: {str(e)}")
             raise
 
-    def responder(self, prompt, cmd=""):
+    def responder(self, prompt, cmd="", mode=None, model_override=None):
         messages = [
             {"role": "system", "content": cmd},
             {"role": "user", "content": prompt}
         ]
         response = ""
         retry = self.config.get_retry_attempts()
+        target_model = model_override or self.config.get_model(mode)
 
         while response == "" and retry > 0:
             retry -= 1
             try:
                 response = openai.chat.completions.create(
-                    model=self.config.get_model(),
+                    model=target_model,
                     messages=messages
                 )
                 break

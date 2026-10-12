@@ -1,0 +1,33 @@
+{
+  "providers": {
+    "openai": {
+      "api_key": ""
+    }
+  },
+  "models": {
+    "gpt-4o-mini": {
+      "provider": "openai"
+    },
+    "gpt-4o": {
+      "provider": "openai"
+    }
+  },
+  "shortcuts": {
+    "upgrade": {
+      "key": "F8",
+      "model": "gpt-4o-mini"
+    },
+    "generic": {
+      "key": "F7+CTRL+X",
+      "model": "gpt-4o-mini"
+    },
+    "python": {
+      "key": "F10",
+      "model": "gpt-4o-mini"
+    },
+    "creation": {
+      "key": "F11",
+      "model": "gpt-4o-mini"
+    }
+  }
+}

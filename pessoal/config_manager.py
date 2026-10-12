@@ -36,9 +36,26 @@ class ConfigManager:
             raise KeyError(f"Environment variable {env_var} not found")
         return value.strip()
 
-    def get_model(self):
-        """Get AI model configuration"""
+    def get_model(self, shortcut_type=None):
+        """Get AI model configuration, optionally for a specific shortcut"""
+        if shortcut_type:
+            try:
+                return self.get('GTRAY', f'model_{shortcut_type.lower()}')
+            except KeyError:
+                pass
         return self.get('GTRAY', 'modelo')
+
+    def get_provider(self, shortcut_type=None):
+        """Get AI provider configuration, optionally for a specific shortcut"""
+        if shortcut_type:
+            try:
+                return self.get('GTRAY', f'provider_{shortcut_type.lower()}')
+            except KeyError:
+                pass
+        try:
+            return self.get('GTRAY', 'provedor')
+        except KeyError:
+            return 'openai'
 
     def get_log_file(self):
         """Get log file path"""
