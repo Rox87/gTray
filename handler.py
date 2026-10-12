@@ -67,12 +67,12 @@ class Gtray:
     def show_terminal(self):
         if self.UI:
             self.UI.show_UI()
-        logger.info("showing UI")
+        logger.info("Interface gráfica exibida.")
         
     def hide_terminal(self):
         if self.UI:
             self.UI.hide_UI()
-        logger.info("hiding UI")
+        logger.info("Interface gráfica ocultada (em segundo plano).")
         
     def __init__(self,UI=None,logger_from=None):
         global logger
@@ -84,14 +84,14 @@ class Gtray:
         self.UI = UI
         self.initialize_app()
     def initialize_app(self):
-        logger.info('preparando...')
+        logger.info("Inicializando componentes do gTray...")
         self.sair = False
         self.prosseguir = True
         self.the_program_to_hide = win32gui.GetForegroundWindow()
         self.mode = None
         self.initialize_ui()
     def initialize_ui(self):
-        logger.info('carregando icones')
+        logger.info("Carregando recursos visuais e ícone da bandeja...")
         from PIL import ImageFile
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         icon_path = self.config.get('GTRAY', 'gtON')
@@ -167,7 +167,7 @@ class Gtray:
     def build_menu(self):
         self.icon.menu = pystray.Menu(self.menu_exit)
     def on_exit(self):
-        logger.info("saindo da aplicação")
+        logger.info("Encerrando aplicação...")
         self._is_running = False
         self.prosseguir = False
         self.unregister_shortcuts()
@@ -175,19 +175,19 @@ class Gtray:
             if hasattr(self, 'icon') and self.icon and getattr(self.icon, '_running', False):
                 self.icon.stop()
         except Exception as ex:
-            logger.error(f"Error stopping icon: {str(ex)}")
+            logger.error(f"Erro ao parar ícone da bandeja: {str(ex)}")
         if self.UI:
             from PyQt5.QtWidgets import QApplication
             QApplication.quit()
     @tempo_decorrido
     def handle_ai_request(self, mode, prompt_modifier=""):
         try:
-            logger.info(f'mode {mode}')
-            logger.info('preparando dados')
+            logger.info(f"Processando atalho '{mode}'...")
             clipboard = self.Engineer.pre_processamento()
             if not clipboard:
+                logger.info("Nenhum texto selecionado na área de transferência.")
                 return
-            logger.info('perguntando a inteligência artificial')
+            logger.info("Consultando provedor de Inteligência Artificial...")
             resolved = self.data_manager.resolve_shortcut(mode)
             api_key = resolved.get('api_key')
             model_name = resolved.get('model_name')
@@ -210,7 +210,7 @@ class Gtray:
                 if resolved.get('extract_blocks', False) and response:
                     response = self.extract_code_blocks(response, comment_char=comment_char)
 
-            logger.info('entregando resposta')
+            logger.info("Resposta da IA recebida e aplicada com sucesso.")
             self.Engineer.pos_processamento(clipboard, response)
         except Exception as ex:
             logger.error(f"Error in {mode} handler: {str(ex)}")

@@ -833,13 +833,13 @@ class GTray_CFG_UI(QWidget):
         event.accept()
 
     def hide_UI(self):
-        logger.info('app no plano de fundo')
+        logger.info("Janela minimizada para a bandeja do sistema.")
         self.hide()
         if not getattr(self, 'is_running', False):
             self.start_service()
 
     def show_UI(self):
-        logger.info('app visivel')
+        logger.info("Janela restaurada para primeiro plano.")
         self.show()
 
     def cmd_start(self):
@@ -865,13 +865,13 @@ if __name__ == '__main__':
     ex = GTray_CFG_UI()
     try:
         if len(sys.argv) > 1 and sys.argv[1] == "1":
-            logger.info(f'main > {sys.argv[1]}')
+            logger.info("Inicialização: Modo 1 (Interface Gráfica + Serviço Ativo).")
             ex.visible = True
             ex.autostart = True
             ex.startstop()
             sys.exit(app.exec_())
         elif len(sys.argv) > 1 and sys.argv[1] == "2":
-            logger.info(f'main > {sys.argv[1]}')
+            logger.info("Inicialização: Modo 2 (Segundo plano na bandeja do sistema).")
             ex.visible = False
             ex.autostart = True
             ex.checkbox_visibility.setChecked(ex.visible)
@@ -881,7 +881,7 @@ if __name__ == '__main__':
         else:
             raise Exception
     except Exception:
-        logger.info('main > UI')
+        logger.info("Inicialização: Interface Gráfica de Configurações.")
         ex.visible = True
         ex.autostart = False
         ex.startstop()
