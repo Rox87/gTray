@@ -22,7 +22,7 @@ class Engineer:
         logger = logger_from
         self.config = ConfigManager()
         
-    def pre_processamento(self, mode='shortcut_melhore_file') -> str:
+    def pre_processamento(self) -> str:
         """
         Captura o texto selecionado na janela ativa simulando Ctrl+C.
         
@@ -30,9 +30,6 @@ class Engineer:
         feedback visual imediato ao usuário enquanto a IA realiza o processamento.
         Retorna a string capturada ou vazia caso nada válido seja selecionado.
         """
-        with open(self.config.get('GTRAY', mode), 'r') as f:
-            shortcut = f.read()
-
         dados_clipboard = ""
         retry_clip = self.config.get_clip_retry()
 

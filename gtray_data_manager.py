@@ -25,7 +25,7 @@ DEFAULT_PROVIDER_BASE_URLS: Dict[str, str] = {
 }
 
 class GTrayDataManager:
-    def __init__(self, filepath: str = DEFAULT_DATA_PATH, sync_legacy: bool = True):
+    def __init__(self, filepath: str = DEFAULT_DATA_PATH, sync_legacy: bool = False):
         self.filepath = filepath
         self.sync_legacy = sync_legacy
         self.data: Dict[str, Any] = {
@@ -37,7 +37,6 @@ class GTrayDataManager:
 
     def _init_defaults(self):
         """Inicializa configurações padrão caso o arquivo não exista."""
-        # Chave padrão da OpenAI se existir k.cfg
         default_key = ""
         k_path = os.path.join('assets', 'k.cfg')
         if os.path.isfile(k_path):
@@ -57,7 +56,7 @@ class GTrayDataManager:
             },
             "shortcuts": {
                 "upgrade": {
-                    "key": self._read_legacy_shortcut("upgrade", "F9"),
+                    "key": "F8",
                     "model": "gpt-4o-mini",
                     "system_prompt": "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada",
                     "extract_blocks": False,
@@ -65,7 +64,7 @@ class GTrayDataManager:
                     "enabled": True
                 },
                 "generic": {
-                    "key": self._read_legacy_shortcut("generic", "F7+CTRL+X"),
+                    "key": "F7+CTRL+X",
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
@@ -73,7 +72,7 @@ class GTrayDataManager:
                     "enabled": True
                 },
                 "python": {
-                    "key": self._read_legacy_shortcut("python", "F10"),
+                    "key": "F9",
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
@@ -81,7 +80,7 @@ class GTrayDataManager:
                     "enabled": True
                 },
                 "creation": {
-                    "key": self._read_legacy_shortcut("creation", "F11"),
+                    "key": "F11",
                     "model": "gpt-4o-mini",
                     "system_prompt": "",
                     "extract_blocks": False,
@@ -91,18 +90,6 @@ class GTrayDataManager:
             }
         }
         self.save()
-
-    def _read_legacy_shortcut(self, name: str, fallback: str) -> str:
-        sc_path = os.path.join('assets', f'shortcut_{name}.cfg')
-        if os.path.isfile(sc_path):
-            try:
-                with open(sc_path, 'r', encoding='utf-8') as f:
-                    val = f.read().strip()
-                    if val:
-                        return val
-            except Exception:
-                pass
-        return fallback
 
     def load(self):
         if os.path.isfile(self.filepath):
@@ -121,30 +108,10 @@ class GTrayDataManager:
             self._init_defaults()
 
     def save(self):
+        """Persiste todos os dados exclusivamente no arquivo JSON."""
         os.makedirs(os.path.dirname(os.path.abspath(self.filepath)), exist_ok=True)
         with open(self.filepath, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=2, ensure_ascii=False)
-        if self.sync_legacy:
-            self.sync_legacy_files()
-
-    def sync_legacy_files(self):
-        """Sincroniza arquivos legados (assets/shortcut_*.cfg e assets/k.cfg) para compatibilidade."""
-        try:
-            # Sincroniza atalhos legados
-            for name, item in self.data.get("shortcuts", {}).items():
-                sc_path = os.path.join('assets', f'shortcut_{name}.cfg')
-                key_combo = item.get("key", "")
-                with open(sc_path, 'w', encoding='utf-8') as f:
-                    f.write(key_combo)
-
-            # Sincroniza chave padrão da openai se existir
-            openai_key = self.get_provider_key("openai")
-            if openai_key is not None:
-                k_path = os.path.join('assets', 'k.cfg')
-                with open(k_path, 'w', encoding='utf-8') as f:
-                    f.write(openai_key)
-        except Exception:
-            pass
 
     # -------------------------------------------------------------
     # 1. Provedor (nome e chave)

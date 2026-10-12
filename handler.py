@@ -133,15 +133,50 @@ class Gtray:
         except Exception as ex:
             logger.error(f"Error starting application: {str(ex)}")
     def unregister_shortcuts(self):
+        if hasattr(self, '_registered_hotkeys') and self._registered_hotkeys:
+            for hotkey in self._registered_hotkeys:
+                try:
+                    keyboard.remove_hotkey(hotkey)
+                except Exception:
+                    pass
+            self._registered_hotkeys = []
         shortcut_types = ['generic', 'upgrade', 'python', 'creation']
         for shortcut_type in shortcut_types:
-            shortcut = self.config.get_shortcut(shortcut_type)
             try:
-                keyboard.remove_hotkey(shortcut.lower())
-            except:
+                shortcut = self.config.get_shortcut(shortcut_type)
+                if shortcut:
+                    keyboard.remove_hotkey(shortcut.lower())
+            except Exception:
                 pass
+
     def register_shortcuts(self):
         self.unregister_shortcuts()
+        self._registered_hotkeys = []
+
+        registered_any = False
+        if hasattr(self, 'data_manager') and self.data_manager:
+            try:
+                shortcuts_dict = self.data_manager.get_shortcuts()
+            except Exception:
+                shortcuts_dict = None
+
+            if isinstance(shortcuts_dict, dict) and shortcuts_dict:
+                for sc_name, sc_info in shortcuts_dict.items():
+                    if isinstance(sc_info, dict):
+                        key = sc_info.get("key", "").strip()
+                        is_enabled = sc_info.get("enabled", True)
+                        if is_enabled and key and key != "(nenhuma)":
+                            handler = lambda name=sc_name: self.handle_ai_request(name)
+                            try:
+                                keyboard.add_hotkey(key.lower(), handler)
+                                self._registered_hotkeys.append(key.lower())
+                                registered_any = True
+                            except Exception as ex:
+                                logger.error(f"Erro ao registrar atalho '{sc_name}' ({key}): {str(ex)}")
+
+        if registered_any:
+            return
+
         shortcut_types = ['generic', 'upgrade', 'python', 'creation']
         handlers = {
             'generic': self.chat_handler,
@@ -163,6 +198,7 @@ class Gtray:
 
             if is_enabled and shortcut:
                 keyboard.add_hotkey(shortcut.lower(), handlers[shortcut_type])
+                self._registered_hotkeys.append(shortcut.lower())
             
     def stop(self):
         self._is_running = False
@@ -224,13 +260,19 @@ class Gtray:
                 self.AI.change_key(api_key, base_url=base_url)
 
             comment_char = resolved.get('comment_char', '#')
+            extract_blocks = resolved.get('extract_blocks', False)
 
-            if mode == 'python':
-                response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name, comment_char=comment_char)
+            if extract_blocks:
+                # Modo Programação ativado: extrai blocos de código ou formata solução
+                if mode == 'python':
+                    response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name, comment_char=comment_char)
+                else:
+                    response = self.AI.responder(clipboard, system_cmd, mode=mode, model_override=model_name)
+                    if response:
+                        response = self.extract_code_blocks(response, comment_char=comment_char)
             else:
+                # Modo Programação desativado: a resposta é retornada ao usuário integralmente
                 response = self.AI.responder(clipboard, system_cmd, mode=mode, model_override=model_name)
-                if resolved.get('extract_blocks', False) and response:
-                    response = self.extract_code_blocks(response, comment_char=comment_char)
 
             logger.info("Resposta da IA recebida e aplicada com sucesso.")
             self.Engineer.pos_processamento(clipboard, response)
@@ -248,15 +290,21 @@ class Gtray:
     @tempo_decorrido
     def creation(self):
         try:
-            subprocess.run("python code_widget.py", shell=True, capture_output=False, text=True)
+            if os.path.exists("code_widget.py"):
+                subprocess.run("python code_widget.py", shell=True, capture_output=False, text=True)
+            else:
+                self.handle_ai_request('creation')
         except Exception as ex:
-            logger.error(f"Error launching code widget: {str(ex)}")
+            logger.error(f"Error in creation handler: {str(ex)}")
     @tempo_decorrido
     def graficos(self):
         try:
-            subprocess.run("python graphs_widget.py", shell=True, capture_output=False, text=True)
+            if os.path.exists("graphs_widget.py"):
+                subprocess.run("python graphs_widget.py", shell=True, capture_output=False, text=True)
+            else:
+                self.handle_ai_request('graphs')
         except Exception as ex:
-            logger.error(f"Error launching graphs widget: {str(ex)}")
+            logger.error(f"Error in graphs handler: {str(ex)}")
     def change_key(self, key, base_url=None):
         if self.AI is not None:
             self.AI.change_key(key, base_url=base_url)

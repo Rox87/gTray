@@ -117,10 +117,6 @@ class TestGTrayUI(unittest.TestCase):
         ui.data_manager.delete_shortcut('custom_test')
         ui.data_manager.delete_model('llama-test')
         ui.data_manager.delete_provider('groq_test')
-        test_cfg = os.path.join('assets', 'shortcut_custom_test.cfg')
-        if os.path.exists(test_cfg):
-            os.remove(test_cfg)
-
         ui.close()
 
     def test_flash_message_on_save_and_delete(self):
@@ -154,9 +150,6 @@ class TestGTrayUI(unittest.TestCase):
 
         # Limpeza
         ui.data_manager.delete_shortcut('flash_test_sc')
-        test_cfg = os.path.join('assets', 'shortcut_flash_test_sc.cfg')
-        if os.path.exists(test_cfg):
-            os.remove(test_cfg)
         ui.close()
 
     def test_buttons_click_shows_friendly_feedback(self):
@@ -231,10 +224,43 @@ class TestGTrayUI(unittest.TestCase):
         ui.data_manager.delete_shortcut('btn_sc_test')
         ui.data_manager.delete_model('btn_model_test')
         ui.data_manager.delete_provider('btn_prov_test')
-        test_cfg = os.path.join('assets', 'shortcut_btn_sc_test.cfg')
-        if os.path.exists(test_cfg):
-            os.remove(test_cfg)
         ui.close()
+
+    def test_listen_shortcut_key_displays_f8(self):
+        from GTray import GTray_CFG_UI
+        from services.klisten import KListen
+        ui = GTray_CFG_UI()
+        
+        # Garante que começa com (nenhuma)
+        ui.lbl_shortcut_key.setText("(nenhuma)")
+
+        # Simula o retorno de KListen.run() capturando 'F8'
+        with patch.object(KListen, 'run', return_value='F8'):
+            ui.btn_listen_key.click()
+            self.assertEqual(ui.lbl_shortcut_key.text(), 'F8')
+            self.assertNotEqual(ui.lbl_shortcut_key.text(), '(nenhuma)')
+
+        ui.close()
+
+    def test_klisten_records_f8_and_combinations(self):
+        import keyboard
+        from services.klisten import KListen, format_key_combination
+
+        kl = KListen(combo="test_f8")
+        self.assertEqual(format_key_combination(['f8']), 'F8')
+        self.assertEqual(format_key_combination(['ctrl', 'f8']), 'Ctrl+F8')
+
+        # Teste evento F8
+        ev_f8 = keyboard.KeyboardEvent('down', 66, 'f8')
+        kl.record_key(ev_f8)
+        self.assertEqual(kl.captured_key, 'F8')
+        self.assertTrue(kl.flag_sair)
+
+        # Teste unhook e reset não perdem captured_key pós run
+        kl.stop_listening()
+        self.assertEqual(kl.captured_key, 'F8')
+
 
 if __name__ == '__main__':
     unittest.main()
+

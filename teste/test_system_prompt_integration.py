@@ -172,6 +172,12 @@ class TestSystemPromptIntegration(unittest.TestCase):
             'comment_char': '#'
         }
 
+        gtray.handle_ai_request('generic')
+        gtray.Engineer.pos_processamento.assert_called_once_with(
+            "código aqui",
+            "# script.py\nprint('extraido')"
+        )
+
     @patch('handler.Image.open')
     @patch('handler.pystray.Icon')
     @patch('handler.win32gui.GetForegroundWindow', return_value=123)
@@ -188,7 +194,7 @@ class TestSystemPromptIntegration(unittest.TestCase):
             'model_name': 'm',
             'base_url': None,
             'system_prompt': '',
-            'extract_blocks': False,
+            'extract_blocks': True,
             'comment_char': '//'
         }
 
@@ -199,6 +205,50 @@ class TestSystemPromptIntegration(unittest.TestCase):
             mode="python",
             model_override="m",
             comment_char="//"
+        )
+
+    @patch('handler.Image.open')
+    @patch('handler.pystray.Icon')
+    @patch('handler.win32gui.GetForegroundWindow', return_value=123)
+    def test_handler_returns_full_response_when_extract_blocks_disabled(self, mock_fg, mock_icon, mock_img):
+        gtray = Gtray(logger_from=MagicMock())
+        gtray.Engineer = MagicMock()
+        gtray.Engineer.pre_processamento.return_value = "imprima de 1 a 10"
+        gtray.AI = MagicMock()
+        raw_ai_response = (
+            "Aqui está o código solicitado:\n"
+            "```python\n"
+            "for i in range(1, 11):\n"
+            "    print(i)\n"
+            "```\n"
+            "Qualquer dúvida estou à disposição!"
+        )
+        gtray.AI.responder.return_value = raw_ai_response
+
+        # Modo Programação desmarcado (extract_blocks: False)
+        gtray.data_manager = MagicMock()
+        gtray.data_manager.resolve_shortcut.return_value = {
+            'api_key': 'k',
+            'model_name': 'm',
+            'base_url': None,
+            'system_prompt': 'seja breve',
+            'extract_blocks': False,
+            'comment_char': '#'
+        }
+
+        # Mesmo para modo 'python', se extract_blocks for False deve retornar integralmente
+        gtray.handle_ai_request('python')
+
+        gtray.AI.python_responder.assert_not_called()
+        gtray.AI.responder.assert_called_once_with(
+            "imprima de 1 a 10",
+            "seja breve",
+            mode="python",
+            model_override="m"
+        )
+        gtray.Engineer.pos_processamento.assert_called_once_with(
+            "imprima de 1 a 10",
+            raw_ai_response
         )
 
     @patch('pessoal.IA.OpenAI')

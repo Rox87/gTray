@@ -38,14 +38,17 @@ class ConfigManager:
         """Get a configuration value as integer"""
         return int(self.get(section, key))
 
-    def get_shortcut(self, shortcut_type):
-        """Get a shortcut configuration"""
-        env_var = f"assets/shortcut_{shortcut_type.lower()}.cfg"
-        with open(env_var,'r') as f:
-            value = f.read().strip()
-        if not value:
-            raise KeyError(f"Environment variable {env_var} not found")
-        return value.strip()
+    def get_shortcut(self, shortcut_type: str) -> str:
+        """Retorna a combinação de tecla do atalho a partir do gtray_data.json."""
+        try:
+            from gtray_data_manager import GTrayDataManager
+            dm = GTrayDataManager(sync_legacy=False)
+            sc = dm.get_shortcut(shortcut_type)
+            if sc and isinstance(sc, dict) and sc.get("key"):
+                return sc.get("key")
+        except Exception:
+            pass
+        return ""
 
     def get_model(self, shortcut_type=None):
         """Get AI model configuration, optionally for a specific shortcut"""

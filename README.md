@@ -57,7 +57,7 @@ O gTray atua em segundo plano de forma não intrusiva. Quando um atalho ativo é
 ### ⌨️ Atalhos 100% Personalizáveis
 - **Gravação Interativa de Teclas**: Pressione o botão *Gravar Tecla* e acione a combinação desejada (ex: `F8`, `F9`, `Ctrl+Alt+T`).
 - **Pré-comando / System Prompt Customizado**: Defina o papel e as instruções de sistema da IA individualmente para cada atalho (ex: *"Apenas reescreva o texto sem explicações"* ou *"Traduza para inglês"*).
-- **Extração Inteligente de Blocos de Código**: Remove textos introdutórios e extrai apenas o código cercado por markdown, prefixando o nome do arquivo comentado.
+- **Extração de Código (Modo Programação)**: Remove textos introdutórios e extrai apenas o código cercado por markdown, prefixando o nome do arquivo comentado.
 - **Caractere de Comentário Configurável**: Defina o caractere adequado para cada contexto (`#`, `//`, `--`, etc.).
 - **Ativação / Desativação Seletiva (Checkbox "Atalho ativo")**: Desative temporariamente um atalho sem precisar excluí-lo.
 - **Hot-Reload em Tempo Real**: Alterações salvas na interface têm efeito imediato nas teclas registradas no sistema, sem precisar reiniciar a aplicação.
@@ -103,9 +103,6 @@ gTray/
 ├── handler.py                # Controlador de eventos globais, bandeja do sistema e hotkeys
 ├── gtray_data_manager.py     # Camada de persistência JSON e resolução em cadeia de atalhos
 ├── ui_theme.py               # Design system e folha de estilos QSS (Dark Theme)
-├── code_widget.py            # Interface complementar para geração de código
-├── graphs_widget.py          # Interface complementar para geração de gráficos
-├── cgen.py                   # Utilitário de parsing e criação de arquivos de código
 │
 ├── pessoal/                  # Módulos centrais de apoio e lógica de negócio
 │   ├── Engineer.py           # Automação de clipboard e emulação de teclado
@@ -119,6 +116,10 @@ gTray/
 │   ├── gtray_data.json       # Base de dados de atalhos, modelos e provedores
 │   ├── favicon.png           # Ícone do aplicativo
 │   └── ...
+│
+├── cmd/                      # Scripts auxiliares para execução em segundo plano
+│   ├── run.bat               # Inicia o gTray em modo background
+│   └── run.vbs               # Launcher sem janela de console
 │
 ├── logs/                     # Diretório de saída dos registros de execução
 │   └── application.log       # Arquivo de log rotativo gerado em tempo de execução
@@ -186,7 +187,7 @@ gTray/
 3. Defina o **Nome do Atalho** e clique em **Gravar Tecla** para capturar a combinação do teclado.
 4. Associe o **Modelo de IA** cadastrado.
 5. *(Opcional)* Preencha a **Mensagem do Sistema** com as instruções específicas para este atalho.
-6. *(Opcional)* Marque **Conteúdo de blocos apenas** caso deseje extração limpa de código.
+6. *(Opcional)* Marque **Modo Programação** caso deseje extração limpa de código.
 7. Garanta que o checkbox **Atalho ativo** esteja marcado.
 8. Clique em **Salvar Atalho**.
 

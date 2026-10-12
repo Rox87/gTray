@@ -736,32 +736,30 @@ class GTray_CFG_UI(QWidget):
     def listen_shortcut_key(self):
         name = self.input_shortcut_name.text().strip() or "upgrade"
         self.button_get_shortcut_clicked = True
-        self.lbl_shortcut_key.setText(config['GTRAY'].get('lbl_shortcut_state_rec', 'Pressione teclas...'))
+        rec_text = config['GTRAY'].get('lbl_shortcut_state_rec', 'Pressione teclas...')
+        prev_key = self.lbl_shortcut_key.text()
+        self.lbl_shortcut_key.setText(rec_text)
         QApplication.processEvents()
 
-        if hasattr(self.kl, 'kl'):
-            self.kl.__init__(combo=name)
+        if self.kl is None:
+            self.kl = KListen(UI=self, combo=name)
         else:
-            self.kl = KListen(combo=name)
-        self.kl.run()
+            self.kl.set_combo(name)
+            self.kl.UI = self
+
+        captured_key = self.kl.run()
         self.kl.set_activated(False)
 
-        # Lê tecla capturada
-        sc_file = os.path.join('assets', f'shortcut_{name}.cfg')
-        captured_key = ""
-        if os.path.isfile(sc_file):
-            try:
-                with open(sc_file, 'r', encoding='utf-8') as f:
-                    captured_key = f.read().strip()
-            except Exception:
-                pass
+        if not captured_key:
+            captured_key = getattr(self.kl, 'captured_key', '').strip()
 
         if captured_key:
             self.lbl_shortcut_key.setText(captured_key)
-            model = self.combo_shortcut_model.currentText().strip()
-            self.data_manager.set_shortcut(name, captured_key, model)
         else:
-            self.lbl_shortcut_key.setText("(nenhuma)")
+            if prev_key and prev_key not in (rec_text, "(nenhuma)"):
+                self.lbl_shortcut_key.setText(prev_key)
+            else:
+                self.lbl_shortcut_key.setText("(nenhuma)")
 
     # -------------------------------------------------------------
     # GERENCIAMENTO DE TEMA E STATUS
