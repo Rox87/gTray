@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
     QComboBox, QFrame, QTabWidget
 )
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtCore import Qt, QUrl, QEvent
 from PyQt5.QtGui import QPixmap, QDesktopServices, QIcon
 from services.klisten import KListen
 from handler import Gtray
@@ -36,6 +36,7 @@ class GTray_CFG_UI(QWidget):
         self.kl = None
         self.visible = None
         self.autostart = False
+        self.is_running = False
         self.fake_event = None
         self.lbl_shortcut_text = None
         self.button_get_shortcut_clicked = False
@@ -634,8 +635,7 @@ class GTray_CFG_UI(QWidget):
         self.update_status_badge()
 
     def update_status_badge(self):
-        is_running = (self.autostart is False and self.gt is not None)
-        if is_running:
+        if getattr(self, 'is_running', False):
             self.lbl_status.setText("● Ativo")
             self.lbl_status.setStyleSheet(get_status_badge_style(True, 'dark'))
         else:
@@ -649,6 +649,7 @@ class GTray_CFG_UI(QWidget):
             self.input_provider_key.setEchoMode(QLineEdit.Password)
 
     def start_buttons_def(self):
+        self.is_running = False
         self.btn_startstop.setText('Iniciar Serviço')
         self.btn_startstop.setProperty('class', 'primary')
         self.btn_startstop.style().unpolish(self.btn_startstop)
@@ -656,6 +657,7 @@ class GTray_CFG_UI(QWidget):
         self.update_status_badge()
 
     def stop_buttons_def(self):
+        self.is_running = True
         self.btn_startstop.setText('Pausar Serviço')
         self.btn_startstop.setProperty('class', 'danger')
         self.btn_startstop.style().unpolish(self.btn_startstop)

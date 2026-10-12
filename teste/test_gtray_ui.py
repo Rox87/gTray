@@ -21,6 +21,25 @@ class TestGTrayUI(unittest.TestCase):
         self.assertIn('#0F172A', ui.styleSheet().upper())
         ui.close()
 
+    def test_initial_status_is_paused(self):
+        from GTray import GTray_CFG_UI
+        ui = GTray_CFG_UI()
+        self.assertEqual(ui.lbl_status.text(), "● Pausado")
+        self.assertFalse(ui.is_running)
+        self.assertEqual(ui.btn_startstop.text(), "Iniciar Serviço")
+        
+        # Testar transição de status
+        ui.stop_buttons_def()
+        self.assertEqual(ui.lbl_status.text(), "● Ativo")
+        self.assertTrue(ui.is_running)
+        self.assertEqual(ui.btn_startstop.text(), "Pausar Serviço")
+
+        ui.start_buttons_def()
+        self.assertEqual(ui.lbl_status.text(), "● Pausado")
+        self.assertFalse(ui.is_running)
+        self.assertEqual(ui.btn_startstop.text(), "Iniciar Serviço")
+        ui.close()
+
     def test_api_key_visibility_toggle(self):
         from GTray import GTray_CFG_UI
         ui = GTray_CFG_UI()

@@ -11,4 +11,5 @@ GTray.spec
 assets/k.cfg
 .superpowers
 teste/__pycache__
-
+assets/gtray_data.json
+
