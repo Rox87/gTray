@@ -130,6 +130,9 @@ class Gtray:
             api_key = resolved.get('api_key')
             model_name = resolved.get('model_name')
             base_url = resolved.get('base_url')
+            system_prompt = (resolved.get('system_prompt') or '').strip()
+
+            system_cmd = system_prompt if system_prompt else prompt_modifier
 
             if self.AI is None:
                 self.AI = IA(api_key or "", logger, base_url=base_url)
@@ -139,7 +142,7 @@ class Gtray:
             if mode == 'python':
                 response = self.AI.python_responder(clipboard, mode=mode, model_override=model_name)
             else:
-                response = self.AI.responder(clipboard, prompt_modifier, mode=mode, model_override=model_name)
+                response = self.AI.responder(clipboard, system_cmd, mode=mode, model_override=model_name)
             logger.info('entregando resposta')
             self.Engineer.pos_processamento(clipboard, response)
         except Exception as ex:

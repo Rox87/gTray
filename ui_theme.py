@@ -120,8 +120,8 @@ def get_theme_stylesheet(theme_name: str = 'dark') -> str:
         color: {p['accent']};
     }}
 
-    /* Campos de Entrada (QLineEdit) */
-    QLineEdit {{
+    /* Campos de Entrada (QLineEdit, QPlainTextEdit, QTextEdit) */
+    QLineEdit, QPlainTextEdit, QTextEdit {{
         background-color: {p['input_bg']};
         border: 1px solid {p['border']};
         border-radius: 6px;
@@ -131,11 +131,11 @@ def get_theme_stylesheet(theme_name: str = 'dark') -> str:
         selection-background-color: {p['btn_primary_bg']};
     }}
 
-    QLineEdit:focus {{
+    QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus {{
         border: 1px solid {p['border_focus']};
     }}
 
-    QLineEdit:disabled {{
+    QLineEdit:disabled, QPlainTextEdit:disabled, QTextEdit:disabled {{
         background-color: {p['input_disabled_bg']};
         color: {p['text_secondary']};
         border: 1px solid {p['border']};

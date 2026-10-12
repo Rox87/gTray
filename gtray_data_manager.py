@@ -58,19 +58,23 @@ class GTrayDataManager:
             "shortcuts": {
                 "upgrade": {
                     "key": self._read_legacy_shortcut("upgrade", "F9"),
-                    "model": "gpt-4o-mini"
+                    "model": "gpt-4o-mini",
+                    "system_prompt": "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada"
                 },
                 "generic": {
                     "key": self._read_legacy_shortcut("generic", "F7+CTRL+X"),
-                    "model": "gpt-4o-mini"
+                    "model": "gpt-4o-mini",
+                    "system_prompt": ""
                 },
                 "python": {
                     "key": self._read_legacy_shortcut("python", "F10"),
-                    "model": "gpt-4o-mini"
+                    "model": "gpt-4o-mini",
+                    "system_prompt": ""
                 },
                 "creation": {
                     "key": self._read_legacy_shortcut("creation", "F11"),
-                    "model": "gpt-4o-mini"
+                    "model": "gpt-4o-mini",
+                    "system_prompt": ""
                 }
             }
         }
@@ -199,17 +203,29 @@ class GTrayDataManager:
         return self.data.get("shortcuts", {})
 
     def get_shortcut(self, name: str) -> Optional[Dict[str, str]]:
-        return self.data.get("shortcuts", {}).get(name)
+        sc = self.data.get("shortcuts", {}).get(name)
+        if sc is not None:
+            if "system_prompt" not in sc:
+                if name == "upgrade":
+                    sc["system_prompt"] = "Não responda o usuario, retorne apenas, sem rodeios, a própria entrada do usuário melhorada"
+                else:
+                    sc["system_prompt"] = ""
+        return sc
 
-    def set_shortcut(self, name: str, key: str, model: str):
+    def set_shortcut(self, name: str, key: str, model: str, system_prompt: str = ""):
         name = name.strip()
         key = key.strip()
         model = model.strip()
+        system_prompt = system_prompt.strip()
         if not name:
             return
         if "shortcuts" not in self.data:
             self.data["shortcuts"] = {}
-        self.data["shortcuts"][name] = {"key": key, "model": model}
+        self.data["shortcuts"][name] = {
+            "key": key,
+            "model": model,
+            "system_prompt": system_prompt
+        }
         self.save()
 
     def delete_shortcut(self, name: str):
@@ -224,6 +240,7 @@ class GTrayDataManager:
         sc = self.get_shortcut(shortcut_name) or {}
         key = sc.get("key", "")
         model_name = sc.get("model", "")
+        system_prompt = sc.get("system_prompt", "")
         
         provider_name = self.get_model_provider(model_name) or "openai"
         api_key = self.get_provider_key(provider_name) or ""
@@ -235,5 +252,6 @@ class GTrayDataManager:
             "model_name": model_name,
             "provider_name": provider_name,
             "api_key": api_key,
-            "base_url": base_url
+            "base_url": base_url,
+            "system_prompt": system_prompt
         }

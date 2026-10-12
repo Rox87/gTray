@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QDesktopWidget, QCheckBox, QLineEdit, QApplication, QWidget,
     QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox,
-    QComboBox, QFrame, QTabWidget
+    QComboBox, QFrame, QTabWidget, QPlainTextEdit
 )
 from PyQt5.QtCore import Qt, QUrl, QEvent
 from PyQt5.QtGui import QPixmap, QDesktopServices, QIcon
@@ -54,7 +54,7 @@ class GTray_CFG_UI(QWidget):
 
     def initUI(self):
         self.setWindowTitle('gTray')
-        self.setFixedSize(400, 600)
+        self.setFixedSize(400, 640)
 
         # Layout Principal
         self.root_layout = QVBoxLayout()
@@ -229,6 +229,18 @@ class GTray_CFG_UI(QWidget):
         model_box.addWidget(lbl_model)
         model_box.addWidget(self.combo_shortcut_model)
         layout.addLayout(model_box)
+
+        # Pré-comando / Mensagem do Sistema
+        prompt_box = QVBoxLayout()
+        prompt_box.setSpacing(2)
+        lbl_prompt = QLabel("Pré-comando / Mensagem do Sistema:")
+        lbl_prompt.setProperty('class', 'headerSubtitle')
+        self.input_shortcut_system_prompt = QPlainTextEdit()
+        self.input_shortcut_system_prompt.setPlaceholderText("Instrução ou papel da IA (ex: Responda apenas com o texto melhorado, sem rodeios)")
+        self.input_shortcut_system_prompt.setFixedHeight(70)
+        prompt_box.addWidget(lbl_prompt)
+        prompt_box.addWidget(self.input_shortcut_system_prompt)
+        layout.addLayout(prompt_box)
 
         # Botões de Ação
         btn_row = QHBoxLayout()
@@ -553,19 +565,23 @@ class GTray_CFG_UI(QWidget):
         if not name:
             self.input_shortcut_name.clear()
             self.lbl_shortcut_key.setText("(nenhuma)")
+            self.input_shortcut_system_prompt.clear()
             return
         sc = self.data_manager.get_shortcut(name) or {}
         key = sc.get("key", "")
         model = sc.get("model", "")
+        system_prompt = sc.get("system_prompt", "")
 
         self.input_shortcut_name.setText(name)
         self.lbl_shortcut_key.setText(key if key else "(nenhuma)")
         if model:
             self.combo_shortcut_model.setCurrentText(model)
+        self.input_shortcut_system_prompt.setPlainText(system_prompt)
 
     def new_shortcut(self):
         self.input_shortcut_name.clear()
         self.lbl_shortcut_key.setText("(nenhuma)")
+        self.input_shortcut_system_prompt.clear()
         self.input_shortcut_name.setFocus()
 
     def save_shortcut(self, show_msg: bool = True):
@@ -574,11 +590,12 @@ class GTray_CFG_UI(QWidget):
         if key == "(nenhuma)":
             key = ""
         model = self.combo_shortcut_model.currentText().strip()
+        system_prompt = self.input_shortcut_system_prompt.toPlainText().strip()
         if not name:
             if show_msg:
                 QMessageBox.warning(self, "Aviso", "O nome do atalho não pode ser vazio.")
             return
-        self.data_manager.set_shortcut(name, key, model)
+        self.data_manager.set_shortcut(name, key, model, system_prompt=system_prompt)
         self.refresh_shortcuts_dropdown()
         self.combo_shortcuts.setCurrentText(name)
         if show_msg:

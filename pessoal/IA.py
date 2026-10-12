@@ -76,10 +76,10 @@ class IA:
             raise
 
     def responder(self, prompt, cmd="", mode=None, model_override=None):
-        messages = [
-            {"role": "system", "content": cmd},
-            {"role": "user", "content": prompt}
-        ]
+        messages = []
+        if cmd and str(cmd).strip():
+            messages.append({"role": "system", "content": str(cmd).strip()})
+        messages.append({"role": "user", "content": prompt})
         response = None
         retry = self.config.get_retry_attempts()
         target_model = model_override or self.config.get_model(mode)

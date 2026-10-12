@@ -73,10 +73,12 @@ class TestGTrayUI(unittest.TestCase):
         self.assertIn('llama-test', ui.data_manager.get_models())
         self.assertEqual(ui.data_manager.get_model_provider('llama-test'), 'groq_test')
 
-        # 3. Salvar Atalho (nome, tecla e modelo)
+        # 3. Salvar Atalho (nome, tecla, modelo e pre-comando)
+        self.assertTrue(hasattr(ui, 'input_shortcut_system_prompt'))
         ui.input_shortcut_name.setText('custom_test')
         ui.lbl_shortcut_key.setText('Ctrl+Alt+T')
         ui.combo_shortcut_model.setCurrentText('llama-test')
+        ui.input_shortcut_system_prompt.setPlainText("Instrução customizada de sistema")
         ui.save_shortcut(show_msg=False)
 
         resolved = ui.data_manager.resolve_shortcut('custom_test')
@@ -84,6 +86,13 @@ class TestGTrayUI(unittest.TestCase):
         self.assertEqual(resolved['model_name'], 'llama-test')
         self.assertEqual(resolved['provider_name'], 'groq_test')
         self.assertEqual(resolved['api_key'], 'gsk-test-key')
+        self.assertEqual(resolved['system_prompt'], "Instrução customizada de sistema")
+
+        # Testa seleção e novo atalho
+        ui.new_shortcut()
+        self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "")
+        ui.on_shortcut_selected('custom_test')
+        self.assertEqual(ui.input_shortcut_system_prompt.toPlainText(), "Instrução customizada de sistema")
         
         # Limpa dados de teste
         ui.data_manager.delete_shortcut('custom_test')

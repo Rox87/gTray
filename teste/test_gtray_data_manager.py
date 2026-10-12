@@ -51,21 +51,23 @@ class TestGTrayDataManager(unittest.TestCase):
         # 2. Modelo (nome e provedor)
         self.manager.set_model('claude-3-5-sonnet', 'anthropic')
         
-        # 3. Atalho (nome, tecla e modelo)
-        self.manager.set_shortcut('upgrade', 'Ctrl+Shift+U', 'claude-3-5-sonnet')
+        # 3. Atalho (nome, tecla, modelo e pre-comando/system_prompt)
+        self.manager.set_shortcut('upgrade', 'Ctrl+Shift+U', 'claude-3-5-sonnet', system_prompt='Instrução de teste')
         
         shortcut = self.manager.get_shortcut('upgrade')
         self.assertIsNotNone(shortcut)
         self.assertEqual(shortcut['key'], 'Ctrl+Shift+U')
         self.assertEqual(shortcut['model'], 'claude-3-5-sonnet')
+        self.assertEqual(shortcut['system_prompt'], 'Instrução de teste')
 
-        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave -> Base URL
+        # Full chain resolution: Atalho -> Modelo -> Provedor -> Chave -> Base URL -> System Prompt
         chain = self.manager.resolve_shortcut('upgrade')
         self.assertEqual(chain['shortcut_name'], 'upgrade')
         self.assertEqual(chain['key'], 'Ctrl+Shift+U')
         self.assertEqual(chain['model_name'], 'claude-3-5-sonnet')
         self.assertEqual(chain['provider_name'], 'anthropic')
         self.assertEqual(chain['api_key'], 'sk-ant-test')
+        self.assertEqual(chain['system_prompt'], 'Instrução de teste')
 
     def test_provider_base_url_auto_and_custom(self):
         # Provedor conhecido automático (ex: deepseek)
