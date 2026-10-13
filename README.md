@@ -108,12 +108,11 @@ gTray/
 │   ├── Engineer.py           # Automação de clipboard e emulação de teclado
 │   ├── Escriba.py            # Gerenciador estruturado de logs e rotação UTF-8
 │   ├── IA.py                 # Integração agnóstica com clientes LLM compatíveis com OpenAI
-│   ├── config_manager.py     # Leitor Singleton do arquivo assets/config.ini
+│   ├── config_manager.py     # Gerenciador de configurações baseado em gtray_data.json
 │   └── Decorador.py          # Decoradores de telemetria e tempo de resposta
 │
 ├── assets/                   # Recursos visuais e arquivos de configuração
-│   ├── config.ini            # Parâmetros estruturais da aplicação
-│   ├── gtray_data.json       # Base de dados de atalhos, modelos e provedores
+│   ├── gtray_data.json       # Base de dados única da aplicação (app, atalhos, modelos e provedores)
 │   ├── favicon.png           # Ícone do aplicativo
 │   └── ...
 │

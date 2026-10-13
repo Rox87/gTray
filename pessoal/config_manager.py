@@ -1,19 +1,19 @@
 """
-pessoal/config_manager.py - Gerenciador Singleton de Arquivos de Configuração INI.
+pessoal/config_manager.py - Gerenciador Central de Configurações da Aplicação.
 
-Centraliza a leitura dos parâmetros estáticos definidos em `assets/config.ini`,
-como caminhos de ícones, arquivos de atalho legados, tempos de retentativa e
-valores padrão de inicialização.
+Fornece acesso aos parâmetros globais da aplicação persistidos em `assets/gtray_data.json`,
+como caminhos de ícones, tempos de retentativa, arquivos de log e configurações de IA,
+descontinuando o arquivo legado assets/config.ini.
 """
 
-import configparser
-import os
-from typing import Optional
+from typing import Any, Optional
+from gtray_data_manager import GTrayDataManager
+
 
 class ConfigManager:
-    """Gerenciador Singleton para leitura das configurações do assets/config.ini."""
+    """Gerenciador Singleton que lê as configurações a partir do gtray_data.json."""
     _instance = None
-    _config = None
+    _dm = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -22,63 +22,79 @@ class ConfigManager:
         return cls._instance
 
     def _initialize(self):
-        """Carrega e analisa o arquivo assets/config.ini com codificação UTF-8."""
-        self._config = configparser.ConfigParser()
-        config_path = os.path.join('assets', 'config.ini')
-        self._config.read(config_path, encoding='utf-8')
+        self._dm = GTrayDataManager(sync_legacy=False)
 
-    def get(self, section: str, key: str) -> str:
-        """Retorna o valor em formato string para a seção e chave especificadas."""
+    def get(self, section: str, key: str, fallback: Any = "") -> str:
+        """
+        Retorna valor de configuração buscando em 'app' ou retornando o fallback padrão.
+        Mantém compatibilidade com chamadas get('GTRAY', '...').
+        """
+        key_lower = key.lower()
+        defaults = {
+            'favicon': 'assets/favicon.png',
+            'gton': 'assets/favicon.png',
+            'gtoff': 'assets/favicon.png',
+            'header_title': 'gTray',
+            'title': 'gTray',
+            'lbl_shortcut_state_rec': 'Pressione uma combinação do teclado',
+            'log': 'logs/app.log',
+            'retry_clip': '140',
+            'retry_ia': '14',
+            'tema': 'dark'
+        }
+        val = self._dm.get_app_setting(key_lower, defaults.get(key_lower, fallback))
+        return str(val) if val is not None else str(fallback)
+
+    def get_int(self, section: str, key: str) -> int:
+        """Retorna um valor de configuração como inteiro."""
         try:
-            return self._config[section][key]
-        except KeyError:
-            raise KeyError(f"Configuration not found for section '{section}' and key '{key}'")
-
-    def get_int(self, section, key):
-        """Get a configuration value as integer"""
-        return int(self.get(section, key))
+            return int(self.get(section, key))
+        except (ValueError, TypeError):
+            if 'clip' in key.lower():
+                return 140
+            return 14
 
     def get_shortcut(self, shortcut_type: str) -> str:
         """Retorna a combinação de tecla do atalho a partir do gtray_data.json."""
         try:
-            from gtray_data_manager import GTrayDataManager
-            dm = GTrayDataManager(sync_legacy=False)
-            sc = dm.get_shortcut(shortcut_type)
+            sc = self._dm.get_shortcut(shortcut_type)
             if sc and isinstance(sc, dict) and sc.get("key"):
                 return sc.get("key")
         except Exception:
             pass
         return ""
 
-    def get_model(self, shortcut_type=None):
-        """Get AI model configuration, optionally for a specific shortcut"""
+    def get_model(self, shortcut_type: Optional[str] = None) -> str:
+        """Retorna o modelo de IA associado ao atalho ou o primeiro modelo disponível."""
         if shortcut_type:
-            try:
-                return self.get('GTRAY', f'model_{shortcut_type.lower()}')
-            except KeyError:
-                pass
-        return self.get('GTRAY', 'modelo')
+            sc = self._dm.get_shortcut(shortcut_type)
+            if sc and isinstance(sc, dict) and sc.get("model"):
+                return sc.get("model")
+        models = self._dm.get_models()
+        if models:
+            return list(models.keys())[0]
+        return "gpt-4o-mini"
 
-    def get_provider(self, shortcut_type=None):
-        """Get AI provider configuration, optionally for a specific shortcut"""
+    def get_provider(self, shortcut_type: Optional[str] = None) -> str:
+        """Retorna o provedor associado ao modelo do atalho ou o primeiro disponível."""
         if shortcut_type:
-            try:
-                return self.get('GTRAY', f'provider_{shortcut_type.lower()}')
-            except KeyError:
-                pass
-        try:
-            return self.get('GTRAY', 'provedor')
-        except KeyError:
-            return 'openai'
+            model = self.get_model(shortcut_type)
+            prov = self._dm.get_model_provider(model)
+            if prov:
+                return prov
+        providers = self._dm.get_providers()
+        if providers:
+            return list(providers.keys())[0]
+        return "openai"
 
-    def get_log_file(self):
-        """Get log file path"""
-        return self.get('GTRAY', 'log')
+    def get_log_file(self) -> str:
+        """Retorna o caminho do arquivo de log."""
+        return self._dm.get_app_setting('log', 'logs/app.log')
 
-    def get_retry_attempts(self):
-        """Get retry attempts configuration"""
-        return self.get_int('GTRAY', 'retry_ia')
+    def get_retry_attempts(self) -> int:
+        """Retorna número de tentativas para chamada de IA."""
+        return int(self._dm.get_app_setting('retry_ia', 14))
 
-    def get_clip_retry(self):
-        """Get clipboard retry attempts configuration"""
-        return self.get_int('GTRAY', 'retry_clip')
+    def get_clip_retry(self) -> int:
+        """Retorna número de tentativas para operações na área de transferência."""
+        return int(self._dm.get_app_setting('retry_clip', 140))

@@ -29,6 +29,7 @@ class GTrayDataManager:
         self.filepath = filepath
         self.sync_legacy = sync_legacy
         self.data: Dict[str, Any] = {
+            "app": {},
             "providers": {},
             "models": {},
             "shortcuts": {}
@@ -47,6 +48,14 @@ class GTrayDataManager:
                 pass
 
         self.data = {
+            "app": {
+                "title": "gTray",
+                "favicon": "assets/favicon.png",
+                "lbl_shortcut_state_rec": "Pressione uma combinação do teclado",
+                "retry_clip": 140,
+                "retry_ia": 14,
+                "log": "logs/app.log"
+            },
             "providers": {
                 "openai": {"api_key": default_key}
             },
@@ -96,6 +105,15 @@ class GTrayDataManager:
             try:
                 with open(self.filepath, 'r', encoding='utf-8') as f:
                     self.data = json.load(f)
+                if "app" not in self.data or not isinstance(self.data["app"], dict):
+                    self.data["app"] = {
+                        "title": "gTray",
+                        "favicon": "assets/favicon.png",
+                        "lbl_shortcut_state_rec": "Pressione uma combinação do teclado",
+                        "retry_clip": 140,
+                        "retry_ia": 14,
+                        "log": "logs/app.log"
+                    }
                 if "providers" not in self.data:
                     self.data["providers"] = {}
                 if "models" not in self.data:
@@ -112,6 +130,23 @@ class GTrayDataManager:
         os.makedirs(os.path.dirname(os.path.abspath(self.filepath)), exist_ok=True)
         with open(self.filepath, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=2, ensure_ascii=False)
+
+    # -------------------------------------------------------------
+    # 0. Configurações Globais da Aplicação (substituindo config.ini)
+    # -------------------------------------------------------------
+    def get_app_setting(self, key: str, default: Any = None) -> Any:
+        """Retorna uma configuração global da aplicação sob 'app'."""
+        app_data = self.data.get("app", {})
+        if isinstance(app_data, dict) and key in app_data:
+            return app_data[key]
+        return default
+
+    def set_app_setting(self, key: str, value: Any):
+        """Define e persiste uma configuração global da aplicação sob 'app'."""
+        if "app" not in self.data or not isinstance(self.data["app"], dict):
+            self.data["app"] = {}
+        self.data["app"][key] = value
+        self.save()
 
     # -------------------------------------------------------------
     # 1. Provedor (nome e chave)

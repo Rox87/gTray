@@ -18,7 +18,6 @@ from services.klisten import KListen
 from handler import Gtray
 from ui_theme import get_theme_stylesheet, get_status_badge_style
 from gtray_data_manager import GTrayDataManager
-import configparser
 from pessoal.Escriba import registrador
 import os
 import subprocess
@@ -30,10 +29,6 @@ load_dotenv()
 r = registrador()
 r.addHand()
 logger = r.get_logger()
-
-# Create a new config parser object
-config = configparser.ConfigParser()
-config.read('assets/config.ini', encoding='utf-8')
 
 
 class GTray_CFG_UI(QWidget):
@@ -81,8 +76,9 @@ class GTray_CFG_UI(QWidget):
 
         # Ícone do Logo
         self.logo_label = QLabel()
-        if os.path.isfile(config['GTRAY']['favicon']):
-            pix = QPixmap(config['GTRAY']['favicon']).scaled(
+        fav_icon = self.data_manager.get_app_setting('favicon', 'assets/favicon.png')
+        if os.path.isfile(fav_icon):
+            pix = QPixmap(fav_icon).scaled(
                 30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )
             self.logo_label.setPixmap(pix)
@@ -94,7 +90,8 @@ class GTray_CFG_UI(QWidget):
         # Título e Subtítulo
         title_box = QVBoxLayout()
         title_box.setSpacing(1)
-        self.header_title = QLabel(config['GTRAY'].get('header_title', 'gTray'))
+        app_title = self.data_manager.get_app_setting('title', 'gTray')
+        self.header_title = QLabel(app_title)
         self.header_title.setProperty('class', 'headerTitle')
         self.header_subtitle = QLabel("Assistente IA de Bandeja")
         self.header_subtitle.setProperty('class', 'headerSubtitle')
@@ -179,8 +176,9 @@ class GTray_CFG_UI(QWidget):
         self.load_all_data()
         self.start_buttons_def()
 
-        if os.path.isfile(config['GTRAY']['favicon']):
-            self.setWindowIcon(QIcon(config['GTRAY']['favicon']))
+        fav_icon = self.data_manager.get_app_setting('favicon', 'assets/favicon.png')
+        if os.path.isfile(fav_icon):
+            self.setWindowIcon(QIcon(fav_icon))
 
         self.pos_left()
         self.show()
@@ -741,7 +739,7 @@ class GTray_CFG_UI(QWidget):
     def listen_shortcut_key(self):
         name = self.input_shortcut_name.text().strip() or "upgrade"
         self.button_get_shortcut_clicked = True
-        rec_text = config['GTRAY'].get('lbl_shortcut_state_rec', 'Pressione teclas...')
+        rec_text = self.data_manager.get_app_setting('lbl_shortcut_state_rec', 'Pressione uma combinação do teclado')
         prev_key = self.lbl_shortcut_key.text()
         self.lbl_shortcut_key.setText(rec_text)
         QApplication.processEvents()
@@ -815,13 +813,11 @@ class GTray_CFG_UI(QWidget):
     def start_service(self):
         if not hasattr(self.gt, 'UI') or self.gt is None:
             self.gt = Gtray(self, logger)
-        file_path = config['GTRAY']['k']
-        if not os.path.isfile(file_path):
-            with open(file_path, 'w', encoding='utf-8') as file:
-                file.write('')
-        with open(file_path, 'r', encoding='utf-8') as f:
-            self.apikey = f.read().strip()
-            self.gt.change_key(self.apikey)
+        providers = self.data_manager.get_providers()
+        if providers:
+            first_key = list(providers.values())[0].get('api_key', '')
+            if first_key:
+                self.gt.change_key(first_key)
 
         self.stop_buttons_def()
         self.gt.start()

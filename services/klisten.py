@@ -1,15 +1,11 @@
 import keyboard
 from time import sleep
-import configparser
 import itertools
 
 try:
     from PyQt5.QtWidgets import QApplication
 except ImportError:
     QApplication = None
-
-config = configparser.ConfigParser()
-config.read('assets/config.ini', encoding='utf-8')
 
 lista_f = [f'f{i}' for i in range(1, 25)]
 lista_letras_mai = [chr(i) for i in range(ord('A'), ord('Z')+1)]

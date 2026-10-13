@@ -19,10 +19,6 @@ from pessoal.config_manager import ConfigManager
 from gtray_data_manager import GTrayDataManager
 import re
 import subprocess
-import configparser
-
-config = configparser.ConfigParser()
-config.read('assets/config.ini', encoding='utf-8')
 
 def wait_hotkey_release():  
     """Aguarda a liberação de teclas modificadoras antes de executar a automação."""
