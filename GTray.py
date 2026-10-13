@@ -222,6 +222,7 @@ class GTray_CFG_UI(QWidget):
         lbl_sel = QLabel("Atalho:")
         lbl_sel.setProperty('class', 'sectionHeader')
         self.combo_shortcuts = QComboBox()
+        self.combo_shortcuts.setCursor(Qt.PointingHandCursor)
         self.combo_shortcuts.currentTextChanged.connect(self.on_shortcut_selected)
 
         self.btn_new_shortcut = QPushButton("+ Novo")
@@ -268,6 +269,7 @@ class GTray_CFG_UI(QWidget):
         lbl_model = QLabel("Modelo de IA Associado:")
         lbl_model.setProperty('class', 'headerSubtitle')
         self.combo_shortcut_model = QComboBox()
+        self.combo_shortcut_model.setCursor(Qt.PointingHandCursor)
         model_box.addWidget(lbl_model)
         model_box.addWidget(self.combo_shortcut_model)
         layout.addLayout(model_box)
@@ -345,6 +347,7 @@ class GTray_CFG_UI(QWidget):
         lbl_sel = QLabel("Modelo:")
         lbl_sel.setProperty('class', 'sectionHeader')
         self.combo_models = QComboBox()
+        self.combo_models.setCursor(Qt.PointingHandCursor)
         self.combo_models.currentTextChanged.connect(self.on_model_selected)
 
         self.btn_new_model = QPushButton("+ Novo")
@@ -372,6 +375,7 @@ class GTray_CFG_UI(QWidget):
         lbl_prov = QLabel("Provedor Associado:")
         lbl_prov.setProperty('class', 'headerSubtitle')
         self.combo_model_provider = QComboBox()
+        self.combo_model_provider.setCursor(Qt.PointingHandCursor)
         prov_box.addWidget(lbl_prov)
         prov_box.addWidget(self.combo_model_provider)
         layout.addLayout(prov_box)
@@ -408,6 +412,7 @@ class GTray_CFG_UI(QWidget):
         lbl_sel = QLabel("Provedor:")
         lbl_sel.setProperty('class', 'sectionHeader')
         self.combo_providers = QComboBox()
+        self.combo_providers.setCursor(Qt.PointingHandCursor)
         self.combo_providers.currentTextChanged.connect(self.on_provider_selected)
 
         self.btn_new_provider = QPushButton("+ Novo")

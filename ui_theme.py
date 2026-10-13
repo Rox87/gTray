@@ -163,23 +163,35 @@ def get_theme_stylesheet(theme_name: str = 'dark') -> str:
 
     /* ComboBox */
     QComboBox {{
-        background-color: {p['input_bg']};
+        background-color: {p['card_bg']};
         border: 1px solid {p['border']};
         border-radius: 6px;
-        padding: 5px 10px;
+        padding: 6px 34px 6px 12px;
         color: {p['text_primary']};
         font-size: 12px;
+        font-weight: 500;
     }}
 
-    QComboBox:focus {{
+    QComboBox:hover {{
+        background-color: #273549;
         border: 1px solid {p['border_focus']};
+    }}
+
+    QComboBox:focus, QComboBox:on {{
+        border: 1px solid {p['accent']};
     }}
 
     QComboBox::drop-down {{
         subcontrol-origin: padding;
         subcontrol-position: top right;
-        width: 20px;
+        width: 28px;
         border-left: none;
+    }}
+
+    QComboBox::down-arrow {{
+        image: url(assets/chevron_down.png);
+        width: 12px;
+        height: 12px;
     }}
 
     QComboBox QAbstractItemView {{
